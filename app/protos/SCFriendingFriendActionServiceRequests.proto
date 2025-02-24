@@ -1,0 +1,189 @@
+syntax = "proto3";
+package snapchat.friending;
+option optimize_for = CODE_SIZE;
+option objc_class_prefix = "SCFriending";
+option csharp_namespace = "SnapProto.Snapchat.Friending";
+
+import "SCAtlasOutgoingFriends.proto";
+import "SCCOREUuid.proto";
+
+message SCFriendingFriendActionFailure {
+    .snapchat.core.SCCOREUUID friendId = 1;
+    .snapchat.friending.SCFriendingFriendActionFailure.SCFriendingFriendActionFailure_FailureReason reason = 2;
+    enum SCFriendingFriendActionFailure_FailureReason {
+		ERROR = 0;
+		ERROR_TRY_AGAIN = 1;
+		ERROR_FRIEND_NOT_FOUND = 2;
+		ERROR_NOT_FRIEND = 3;
+		ERROR_WITHOUT_MESSAGE = 4;
+		ERROR_SERVER = 5;
+		ERROR_INVALID_PARAM = 6;
+		ERROR_NO_PERMISSION = 7;
+		ADD_RATE_LIMITED_MINUTE_OR_HOUR = 13;
+		ADD_RATE_LIMITED_DAY = 14;
+		ADD_RATE_LIMITED_WEEK_OR_MONTH = 15;
+		ADD_DEACTIVATED_ACCOUNT = 10;
+		ADD_REACH_LIMIT = 11;
+		ADD_EXISTING_FRIEND = 12;
+		REMOVE_SELF = 20;
+		BLOCK_SELF = 31;
+		DISPLAY_EMPTY = 60;
+    }
+}
+
+message SCFriendingFriendAddParam {
+    .snapchat.core.SCCOREUUID friendId = 1;
+    .snapchat.friending.SCFriendingFriendAddParam.SCFriendingAddSource source = 2;
+    string suggestionToken = 3;
+    string displayName = 4;
+    string snapId = 5;
+    string compositeStoryId = 6;
+    enum SCFriendingAddSource {
+		ADDED_BY_UNKNOWN = 0;
+		ADDED_BY_PHONE = 1;
+		ADDED_BY_USERNAME = 2;
+		ADDED_BY_QR_CODE = 3;
+		ADDED_BY_ADDED_ME_BACK = 4;
+		ADDED_BY_NEARBY = 5;
+		ADDED_BY_SUGGESTED = 6;
+		ADDED_BY_OFFICIAL_STORY_SEARCH = 7;
+		ADDED_BY_DEEP_LINK = 8;
+		ADDED_BY_INVITE = 9;
+		ADDED_BY_STORY_CHROME = 10;
+		ADDED_BY_SHARED_USERNAME = 11;
+		ADDED_BY_SHARED_STORY = 12;
+		ADDED_BY_GROUP_CHAT = 13;
+		ADDED_BY_SHAZAM = 14;
+		ADDED_BY_MOB = 15;
+		ADDED_BY_FEATURED_OFFICIAL_STORY = 16;
+		ADDED_FROM_OUR_STORY = 17;
+		ADDED_BY_INFLUENCER_RECOMMENDATION = 18;
+		ADDED_BY_DISPLAY_NAME = 198;
+		ADDED_BY_TEST = 20;
+		ADDED_BY_MENTION = 21;
+		ADDED_BY_SUBSCRIPTION = 22;
+		ADDED_BY_MENTION_STICKER = 23;
+		ADDED_BY_SNAPCODE_STICKER = 24;
+		ADDED_FROM_SPOTLIGHT = 25;
+		ADDED_FROM_PUBLIC_PROFILE = 26;
+		ADDED_FROM_LENS = 27;
+		ADDED_BY_CHAT = 28;
+		ADDED_BY_SNAP_ANYONE = 29;
+		ADDED_BY_COMMUNITY = 30;
+		ADDED_BY_NEARBY_FRIENDS = 31;
+		ADDED_BY_SEARCH = 32;
+    }
+}
+
+message SCFriendingFriendBlockParam {
+    .snapchat.core.SCCOREUUID friendId = 1;
+}
+
+message SCFriendingFriendDisplayNameParam {
+    .snapchat.core.SCCOREUUID friendId = 1;
+    string displayName = 2;
+}
+
+message SCFriendingFriendIgnoreParam {
+    .snapchat.core.SCCOREUUID friendId = 1;
+}
+
+message SCFriendingFriendInviteOrAddByPhoneParam {
+    repeated string countryCodeArray = 1;
+    string rawPhoneNumber = 2;
+    string displayName = 3;
+}
+
+message SCFriendingFriendInviteParam {
+    .snapchat.core.SCCOREUUID friendId = 1;
+    string displayName = 2;
+}
+
+message SCFriendingFriendRemoveParam {
+    .snapchat.core.SCCOREUUID friendId = 1;
+    string snapId = 2;
+    string compositeStoryId = 3;
+}
+
+message SCFriendingFriendUnblockParam {
+    .snapchat.core.SCCOREUUID friendId = 1;
+}
+
+message SCFriendingFriendsActionResponse {
+    repeated .com.snapchat.atlas.proto.SCAtlasOutgoingFriend successes = 1;
+    repeated .snapchat.friending.SCFriendingFriendActionFailure failures = 2;
+    string message = 3;
+}
+
+message SCFriendingFriendsAddRequest {
+    string page = 1;
+    repeated .snapchat.friending.SCFriendingFriendAddParam paramsArray = 2;
+    string pageSessionId = 3;
+}
+
+message SCFriendingFriendsBlockRequest {
+    repeated .snapchat.friending.SCFriendingFriendBlockParam paramsArray = 1;
+	string pageSessionId = 2;
+}
+
+message SCFriendingFriendsDisplayNameChangeRequest {
+    repeated .snapchat.friending.SCFriendingFriendDisplayNameParam paramsArray = 1;
+}
+
+message SCFriendingFriendsIgnoreRequest {
+    repeated .snapchat.friending.SCFriendingFriendIgnoreParam paramsArray = 1;
+	string pageSessionId = 2;
+}
+
+message SCFriendingFriendsInviteOrAddByPhoneRequest {
+    string page = 1;
+    repeated .snapchat.friending.SCFriendingFriendInviteOrAddByPhoneParam paramsArray = 2;
+    .snapchat.friending.SCFriendingFriendsInviteOrAddByPhoneRequest.SCFriendingFriendsInviteOrAddByPhoneRequest_Source source = 3;
+    enum SCFriendingFriendsInviteOrAddByPhoneRequest_Source {
+		UNKNOWN = 0;
+		REGISTRATION = 1;
+		ALL_CONTACTS = 2;
+		FRIEND_FEED = 3;
+		ADD_FRIENDS = 4;
+		UNIVERSAL_SEARCH = 5;
+		INVITE_FRIENDS_PAGE = 6;
+		UNIVERSAL_SEARCH_PRETYPE = 7;
+    }
+}
+
+message SCFriendingFriendsInviteRequest {
+    repeated .snapchat.friending.SCFriendingFriendInviteParam paramsArray = 1;
+}
+
+message SCFriendingFriendsMuteStoryParam {
+    .snapchat.core.SCCOREUUID friendId = 1;
+}
+
+message SCFriendingFriendsMuteStoryRequest {
+    repeated .snapchat.friending.SCFriendingFriendsMuteStoryParam paramsArray = 1;
+}
+
+message SCFriendingFriendsRemoveRequest {
+    repeated .snapchat.friending.SCFriendingFriendRemoveParam paramsArray = 1;
+	string pageSessionId = 2;
+}
+
+message SCFriendingFriendsTransferInvitesRequest {
+    .snapchat.core.SCCOREUUID fromTemporaryUserId = 1;
+    .snapchat.core.SCCOREUUID toUserId = 2;
+}
+
+message SCFriendingFriendsTransferInvitesResponse {
+}
+
+message SCFriendingFriendsUnblockRequest {
+    repeated .snapchat.friending.SCFriendingFriendUnblockParam paramsArray = 1;
+}
+
+message SCFriendingFriendsUnmuteStoryParam {
+    .snapchat.core.SCCOREUUID friendId = 1;
+}
+
+message SCFriendingFriendsUnmuteStoryRequest {
+    repeated .snapchat.friending.SCFriendingFriendsUnmuteStoryParam paramsArray = 1;
+}

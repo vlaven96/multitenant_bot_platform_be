@@ -1,0 +1,68 @@
+syntax = "proto3";
+package snapchat.fidelius;
+option optimize_for = CODE_SIZE;
+option objc_class_prefix = "SCFidelius";
+option csharp_namespace = "SnapProto.Snapchat.Fidelius";
+
+import "SCCOREUuid.proto";
+
+message SCFideliusFideliusDeviceKey {
+	bytes publicKey = 1;
+	bytes hashedPublicKey = 2;
+	bytes iwek = 3;
+	uint64 version = 4;
+	uint64 createdTimestamp = 5;
+	uint64 lastUpdatedTimestamp = 6;
+	repeated string authSessionIdsArray = 7;
+}
+
+message SCFideliusFideliusTentativeDeviceKey {
+    bytes publicKey = 1;
+    bytes hashedPublicKey = 2;
+    bytes iwek = 3;
+    uint64 version = 4;
+}
+
+message SCFideliusFideliusTentativeWebKey {
+    bytes publicKey = 1;
+    bytes keyPairId = 2;
+    bytes rwk = 3;
+    uint64 version = 4;
+}
+
+message SCFideliusFideliusUserKey {
+    repeated .snapchat.fidelius.SCFideliusFideliusDeviceKey deviceKeysArray = 1;
+}
+
+message SCFideliusFideliusWebRecord {
+    repeated .snapchat.fidelius.SCFideliusWebAppInfo webAppInfosArray = 1;
+}
+
+message SCFideliusFriendDeviceKey {
+	bytes publicKey = 1;
+	uint64 version = 2;
+
+	enum SCFideliusFriendDeviceKey_DeviceType {
+		UNSET = 0;
+		MOBILE = 1;
+		WEB = 2;
+	}
+
+	SCFideliusFriendDeviceKey_DeviceType deviceType = 3;
+}
+
+message SCFideliusFriendKeys {
+    .snapchat.core.SCCOREUUID userId = 1;
+    repeated .snapchat.fidelius.SCFideliusFriendDeviceKey friendDeviceKeysArray = 2;
+}
+
+message SCFideliusWebAppInfo {
+	bytes publicKey = 1;
+	bytes keyPairId = 2;
+	bytes rwk = 3;
+	uint64 version = 4;
+	uint64 createdTimestamp = 5;
+	uint64 lastUpdatedTimestamp = 6;
+	repeated string authSessionIdsArray = 7;
+	uint64 logoutTimestamp = 8;
+}

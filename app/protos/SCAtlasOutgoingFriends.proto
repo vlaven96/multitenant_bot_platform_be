@@ -1,0 +1,58 @@
+syntax = "proto3";
+package com.snapchat.atlas.proto;
+option optimize_for = CODE_SIZE;
+option objc_class_prefix = "SCAtlas";
+option csharp_namespace = "SnapProto.Com.Snapchat.Atlas.Proto";
+
+import "SCAtlasFriendmoji.proto";
+import "GTPDate.proto";
+import "SCBitmojiBackgroundURL.proto";
+import "SCCOREUuid.proto";
+import "SCFideliusKeys.proto";
+
+message SCAtlasGetOutgoingFriendsRequest {
+    .snapchat.core.SCCOREUUID userId = 1;
+    repeated .snapchat.core.SCCOREUUID friendUserIdsArray = 2;
+}
+
+message SCAtlasGetOutgoingFriendsResponse {
+    repeated .com.snapchat.atlas.proto.SCAtlasOutgoingFriend outgoingFriendsArray = 1;
+    repeated .com.snapchat.atlas.proto.SCAtlasExtraFriendmoji extraMutableFriendmojisArray = 2;
+    repeated .com.snapchat.atlas.proto.SCAtlasExtraFriendmoji extraReadOnlyFriendmojisArray = 3;
+}
+
+message SCAtlasOutgoingFriend {
+    .snapchat.core.SCCOREUUID userId = 1;
+    string mutableUsername = 2;
+    string displayName = 3;
+    .com.snapchat.atlas.proto.SCAtlasOutgoingFriend.SCAtlasFriendLinkType friendLinkType = 4;
+    .google_2.type.GTPDate birthday = 5;
+    int64 addedTs = 6;
+    int64 reverseAddedTs = 7;
+    bool canFriendSeeCustomStories = 8;
+    repeated .com.snapchat.atlas.proto.SCAtlasFriendmoji friendmojisArray = 9;
+    string bitmojiAvatarId = 10;
+    string bitmojiSelfieId = 11;
+    string bitmojiSceneId = 12;
+    string bitmojiBackgroundId = 13;
+    bool isBitmojiFriendmojiSharingSupported = 14;
+    repeated .snapchat.fidelius.SCFideliusFriendDeviceKey fideliusFriendInfoArray = 15;
+    bool isStoryMuted = 16;
+    .snapchat.core.SCCOREUUID snapProId = 17;
+    bool isCameosSharingSupported = 18;
+    int32 cameosSharingPolicy = 19;
+    int32 plusBadgeVisibility = 20;
+    string postViewEmoji = 22;
+    .snapchat.bitmoji.profile.v1.SCBitmojiBitmojiBackgroundURL bitmojiBackgroundURL = 23;
+    enum SCAtlasFriendLinkType {
+        SCAtlasFriendLinkType_FriendLinkTypeUnset = 0;
+        SCAtlasFriendLinkType_FriendLinkTypeUnknown = 1;
+        SCAtlasFriendLinkType_FriendLinkTypeFriend = 2;
+        SCAtlasFriendLinkType_FriendLinkTypePending = 3;
+        SCAtlasFriendLinkType_FriendLinkTypeFollowing = 4;
+        SCAtlasFriendLinkType_FriendLinkTypeBlocked = 5;
+        SCAtlasFriendLinkType_FriendLinkTypeDeleted = 6;
+        SCAtlasFriendLinkType_FriendLinkTypeLocked = 7;
+        SCAtlasFriendLinkType_FriendLinkTypeInvited = 8;
+    }
+}

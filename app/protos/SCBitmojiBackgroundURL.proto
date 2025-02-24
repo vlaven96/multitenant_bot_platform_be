@@ -1,0 +1,14 @@
+syntax = "proto3";
+package snapchat.bitmoji.profile.v1;
+option optimize_for = CODE_SIZE;
+option objc_class_prefix = "SCBitmoji";
+option csharp_namespace = "SnapProto.Snapchat.Bitmoji.Profile.V1";
+
+message SCBitmojiBitmojiBackgroundURL {
+    .snapchat.bitmoji.profile.v1.SCBitmojiBitmojiBackgroundURL.SCBitmojiBitmojiBackgroundURL_BackgroundType type = 1;
+    string backgroundURL = 2;
+    enum SCBitmojiBitmojiBackgroundURL_BackgroundType {
+		BACKGROUND_URL_TYPE_UNSET = 0;
+		GENERATIVE = 1;
+    }
+}

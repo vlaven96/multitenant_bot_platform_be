@@ -1,0 +1,17 @@
+syntax = "proto3";
+package com.snapchat.atlas.proto;
+option optimize_for = CODE_SIZE;
+option objc_class_prefix = "SCAtlas";
+option csharp_namespace = "SnapProto.Com.Snapchat.Atlas.Proto";
+
+import "SCAtlasEmojiInfo.proto";
+
+message SCAtlasExtraFriendmoji {
+    string categoryName = 1;
+    .com.snapchat.atlas.proto.SCAtlasEmojiInfo emojiInfo = 2;
+}
+
+message SCAtlasFriendmoji {
+    string categoryName = 1;
+    int64 expirationTime = 2;
+}

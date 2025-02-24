@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package snapkat;
+
+message SnapkatDecodeProtoPayload {
+    SnapkatDecodeResponseType type = 1;
+    bytes payload_bytes = 2;
+    SnapkatDevice device = 3;
+}
+
+message SnapkatDevice {
+    string ios_version = 1;
+    string device_model = 2;
+    int64 device_id = 3;
+    uint32 short_device_id = 4;
+    string device_carrier = 5;
+    string device_region = 6;
+    string device_locale = 7;
+    string device_language = 8;
+    string device_token_tag = 9;
+    uint32 device_screen_width = 10;
+    uint32 device_screen_height = 11;
+    string app_version = 12;
+    string app_version_rounded = 13;
+    string app_version_full = 14;
+    string app_package_name = 15;
+    string IMEI = 16;
+    string IPSW = 17;
+    string user_agent = 18;
+    string grpc_user_agent = 19;
+    AppClientIds app_client_ids = 20;
+    uint32 lenscore_version = 21;
+    uint64 first_install_time = 22;
+    FideliusKeys fidelius_keys = 23;
+    string timezone = 24;
+    ArgosDeviceToken argos_token = 25;
+    string user_auth_token = 26;
+    string x_snap_access_token = 27;
+    string user_id = 28;
+    string mutable_username = 29;
+}
+
+message AppClientIds {
+    string blizzard_client_id = 1;
+    string login_flow_session_id = 2;
+    string authentication_session_id = 3;
+    string network_request_id = 4;
+    string cof_device_id = 5;
+}
+
+message FideliusKeys {
+    string pub_ec_key = 1;
+    string priv_ec_key = 2;
+    string uncompressed_pub_key = 3;
+    string keypair_id = 4;
+    string keypair_key = 5;
+    uint64 version = 6;
+}
+
+message ArgosDeviceToken {
+    string token = 1;
+    uint32 security_clearance = 2;
+}
+
+enum SnapkatDecodeResponseType {
+    DECODE_TYPE_UNSET = 0;
+    DECODE_LOGIN_WITH_PASSWORD = 1;
+    DECODE_ARGOS_GET_TOKEN_RESPONSE = 2;
+    DECODE_ADD_FRIENDS_RESPONSE = 3;
+    DECODE_REMOVE_FRIENDS_RESPONSE = 4;
+    DECODE_SYNC_CONVERSATIONS_RESPONSE = 5;
+    DECODE_GET_UPLOAD_LOCATIONS_BY_KEY_RESPONSE = 6;
+    DECODE_CREATE_CONTENT_MESSAGE_RESPONSE = 7;
+    DECODE_SEND_ODLV_CODE_RESPONSE = 8;
+    DECODE_VERIFY_ODLV_CODE_RESPONSE = 9;
+    DECODE_DELTA_SYNC_RESPONSE = 10;
+    DECODE_BATCH_DELTA_SYNC_RESPONSE = 11;
+    DECODE_SEARCH_RESPONSE = 12;
+    DECODE_CHECK_USERNAME_RESPONSE = 13;
+    DECODE_SET_DISPLAY_NAME_RESPONSE = 15;
+    DECODE_UPDATE_EMAIL_RESPONSE = 16;
+    DECODE_VERIFY_CHALLENGE_RESPONSE = 17;
+    DECODE_QUERY_MESSAGES_RESPONSE = 18;
+    DECODE_GET_SELF_AVATAR_RESPONSE = 19;
+    DECODE_GET_AVATAR_RESPONSE = 20;
+    DECODE_GET_FRIENDS_USERSCORE_RESPONSE = 21;
+    DECODE_GET_LATEST_USERNAME_CHANGE_DATES_RESPONSE = 22;
+    DECODE_GET_STORIES_BATCH_RESPONSE = 23;
+    DECODE_SEND_TYPING_NOTIFICATION_RESPONSE = 24;
+    DECODE_UPDATE_CONVERSATION_RESPONSE = 25;
+    DECODE_QUERY_CONVERSATIONS_RESPONSE = 26;
+    DECODE_UPDATE_CONTENT_MESSAGE_RESPONSE = 27;
+    DECODE_VERIFY_TWO_FA_RESPONSE = 28;
+    DECODE_CHANGE_USERNAME_RESPONSE = 29;
+    DECODE_SYNC_CUSTOM_STORY_GROUPS_RESPONSE = 30;
+    DECODE_DELETE_CUSTOM_STORY_GROUP_RESPONSE = 31;
+    DECODE_CREATE_CUSTOM_STORY_GROUP_RESPONSE = 32;
+}

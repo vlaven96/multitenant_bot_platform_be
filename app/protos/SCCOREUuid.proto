@@ -1,0 +1,10 @@
+syntax = "proto3";
+package snapchat.core;
+option optimize_for = CODE_SIZE;
+option objc_class_prefix = "SCCORE";
+option csharp_namespace = "SnapProto.Snapchat.Core";
+
+message SCCOREUUID {
+    fixed64 highBits = 1;
+    fixed64 lowBits = 2;
+}

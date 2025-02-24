@@ -1,0 +1,20 @@
+syntax = "proto3";
+package com.snapchat.atlas.proto;
+option optimize_for = CODE_SIZE;
+option objc_class_prefix = "SCAtlas";
+option csharp_namespace = "SnapProto.Com.Snapchat.Atlas.Proto";
+
+message SCAtlasEmojiInfo {
+    .com.snapchat.atlas.proto.SCAtlasEmojiInfo.SCAtlasEmojiType type = 1;
+    string source = 2;
+    string title = 3;
+    string emojiDescription = 4;
+    string emojiPickerDescription = 5;
+    .com.snapchat.atlas.proto.SCAtlasEmojiInfo.SCAtlasEmojiType defaultType = 6;
+    string defaultValue = 7;
+    int32 emojiLegendRank = 8;
+    enum SCAtlasEmojiType {
+        SCAtlasEmojiType_EmojiTypeUnset = 0;
+        SCAtlasEmojiType_EmojiTypeUnicode = 1;
+    }
+}

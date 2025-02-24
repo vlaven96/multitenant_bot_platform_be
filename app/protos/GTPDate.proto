@@ -1,0 +1,11 @@
+syntax = "proto3";
+package google_2.type;
+option optimize_for = CODE_SIZE;
+option objc_class_prefix = "GTP";
+option csharp_namespace = "SnapProto.Google.Type";
+
+message GTPDate {
+    int32 year = 1;
+    int32 month = 2;
+    int32 day = 3;
+}
