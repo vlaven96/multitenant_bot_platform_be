@@ -127,6 +127,7 @@ class JobExecutorService:
     @staticmethod
     def get_executionsV3(
             db: Session,
+            agency_id:int,
             limit: int = 20,
             offset: int = 0,
             username: Optional[str] = None,
@@ -141,7 +142,7 @@ class JobExecutorService:
         """
 
         subq = db.query(Execution.id, Execution.start_time)
-
+        subq = subq.filter(Execution.agency_id == agency_id)
         # If filtering, join with AccountExecution (and possibly SnapchatAccount)
         if username or status or execution_type or job_id:
             subq = subq.join(Execution.account_executions)

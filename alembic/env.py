@@ -17,6 +17,8 @@ from app.schemas.snapkat_request_log import SnapkatRequestLog
 from app.schemas.user import User
 from app.schemas.chatbot import ChatBot
 from app.schemas.snapchat_account_status_log import SnapchatAccountStatusLog
+from app.schemas.agency import Agency
+
 from app.database import Base
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

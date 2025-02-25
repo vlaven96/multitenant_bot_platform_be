@@ -7,12 +7,14 @@ from app.schemas.chatbot import ChatBot
 
 class ChatBotService:
     @staticmethod
-    def get_all_chatbots(db: Session) -> List[ChatBot]:
-        return db.query(ChatBot).all()
+    def get_all_chatbots(db: Session, agency_id: int) -> List[ChatBot]:
+        return db.query(ChatBot).filter(ChatBot.agency_id == agency_id).all()
 
     @staticmethod
-    def create_chatbot(db: Session, chatbot_data: ChatBotCreate) -> ChatBot:
-        chatbot = ChatBot(**chatbot_data.dict())
+    def create_chatbot(db: Session, agency_id, chatbot_data: ChatBotCreate) -> ChatBot:
+        data = chatbot_data.dict()
+        data["agency_id"] = agency_id
+        chatbot = ChatBot(**data)
         db.add(chatbot)
         db.commit()
         db.refresh(chatbot)

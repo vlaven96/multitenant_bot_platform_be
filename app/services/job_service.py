@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class JobsService:
     @staticmethod
-    def create_job(db: Session, job_create: JobCreateRequest) -> Job:
+    def create_job(db: Session, agency_id:int, job_create: JobCreateRequest) -> Job:
         """
         Creates a new job, adds it to the database, and schedules it if active.
         """
@@ -43,7 +43,8 @@ class JobsService:
                 configuration=job_create.configuration,
                 status=job_create.status or JobStatusEnum.ACTIVE,  # Default to ACTIVE if not provided
                 start_date=job_create.first_execution_time,
-                sources=job_create.sources
+                sources=job_create.sources,
+                agency_id=agency_id
             )
             db.add(db_job)
             db.commit()
@@ -216,11 +217,11 @@ class JobsService:
         return db_job
 
     @staticmethod
-    def list_jobs(db: Session, status_filters: Optional[List[JobStatusEnum]] = None) -> List[Job]:
+    def list_jobs(db: Session, agency_id:int, status_filters: Optional[List[JobStatusEnum]] = None) -> List[Job]:
         """
         Retrieves a list of jobs, optionally filtered by status.
         """
-        query = db.query(Job)
+        query = db.query(Job).filter(Job.agency_id==agency_id)
         if status_filters:
             query = query.filter(Job.status.in_(status_filters))
         query = query.order_by(Job.created_at.asc())
@@ -272,11 +273,11 @@ class JobsService:
         return db_job
 
     @staticmethod
-    def list_jobs_simplified(db: Session) -> List[JobSimplifiedResponse]:
+    def list_jobs_simplified(db: Session, agency_id: int) -> List[JobSimplifiedResponse]:
         """
-        Returns a simplified list of jobs (id and name).
+        Returns a simplified list of jobs (id and name) filtered by agency.
         """
-        jobs = db.query(Job.id, Job.name).all()
+        jobs = db.query(Job.id, Job.name).filter(Job.agency_id == agency_id).all()
         return [JobSimplifiedResponse(id=job.id, name=job.name) for job in jobs]
 
     @staticmethod

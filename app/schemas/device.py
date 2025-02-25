@@ -7,6 +7,6 @@ class Device(Base):
     
     id = Column(Integer, primary_key=True)
     data = Column(JSON, nullable=False)
-    snapchat_account_id = Column(Integer, ForeignKey('snapchat_account.id'), nullable=False)
+    snapchat_account_id = Column(Integer, ForeignKey('snapchat_account.id'), nullable=False, unique=True)
 
     snapchat_account = relationship("SnapchatAccount", back_populates="device")

@@ -11,7 +11,7 @@ from app.models.status_enum import StatusEnum
 from app.schemas.executions.execution import Execution
 from app.database import get_db
 from app.services.job_executor_service import JobExecutorService
-from app.utils.security import get_current_user
+from app.utils.security import get_current_user, get_agency_id
 from fastapi import Query
 
 router = APIRouter(
@@ -24,6 +24,7 @@ router = APIRouter(
 def create_execution(execution: ExecutionCreateRequest,
                      db: Session = Depends(get_db),
                      current_user: dict = Depends(get_current_user),
+                     agency_id: int = Depends(get_agency_id),
                      background_tasks: BackgroundTasks = BackgroundTasks()
                      ):
     """
@@ -38,7 +39,8 @@ def create_execution(execution: ExecutionCreateRequest,
         type=execution.type,
         triggered_by=username,
         configuration=execution.configuration,
-        status=StatusEnum.STARTED
+        status=StatusEnum.STARTED,
+        agency_id=agency_id
     )
     db.add(new_execution)
     db.commit()
@@ -48,16 +50,18 @@ def create_execution(execution: ExecutionCreateRequest,
 
     return new_execution
 
+
 @router.get("/", response_model=List[ExecutionResultResponse])
 def get_all_executions(
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    limit: int = Query(20, ge=1, le=100, description="Number of records to retrieve"),
-    offset: int = Query(0, ge=0, description="Offset for pagination"),
-    username: Optional[str] = Query(None, description="Filter by Snapchat account username"),
-    status: Optional[StatusEnum] = Query(None, description="Filter by AccountExecution status"),
-    execution_type: Optional[ExecutionTypeEnum] = Query(None, description="Filter by Execution type"),
-    job_id: Optional[int] = Query(None, description="Filter by Job"),
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(get_current_user),
+        agency_id: int = Depends(get_agency_id),
+        limit: int = Query(20, ge=1, le=100, description="Number of records to retrieve"),
+        offset: int = Query(0, ge=0, description="Offset for pagination"),
+        username: Optional[str] = Query(None, description="Filter by Snapchat account username"),
+        status: Optional[StatusEnum] = Query(None, description="Filter by AccountExecution status"),
+        execution_type: Optional[ExecutionTypeEnum] = Query(None, description="Filter by Execution type"),
+        job_id: Optional[int] = Query(None, description="Filter by Job"),
 ):
     """
       Retrieve executions with optional filtering by username and status.
@@ -66,18 +70,20 @@ def get_all_executions(
     # Delegate to the service layer
     executions = JobExecutorService.get_executionsV3(
         db=db,
+        agency_id=agency_id,
         limit=limit,
         offset=offset,
         username=username,
         status=status,
         execution_type=execution_type,
-        job_id= job_id
+        job_id=job_id
     )
     return executions
 
 
 @router.get("/{execution_id}", response_model=ExecutionResponse)
-def get_execution_by_id(execution_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+def get_execution_by_id(execution_id: int, db: Session = Depends(get_db),
+                        current_user: dict = Depends(get_current_user), agency_id: int = Depends(get_agency_id), ):
     """
     Retrieve a specific execution by its ID.
     """
@@ -87,14 +93,16 @@ def get_execution_by_id(execution_id: int, db: Session = Depends(get_db), curren
         raise HTTPException(status_code=404, detail=str(e))
     return execution
 
+
 @router.get("/by_snapchat_account/{snapchat_account_id}", response_model=List[ExecutionResponse])
 def get_executions_by_snapchat_account(
-    snapchat_account_id: int,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    limit: int = Query(20, ge=1, le=100, description="Number of records to retrieve"),
-    offset: int = Query(0, ge=0, description="Offset for pagination"),
-    execution_type: Optional[ExecutionTypeEnum] = Query(None, description="Filter by Execution type"),
+        snapchat_account_id: int,
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(get_current_user),
+        agency_id: int = Depends(get_agency_id),
+        limit: int = Query(20, ge=1, le=100, description="Number of records to retrieve"),
+        offset: int = Query(0, ge=0, description="Offset for pagination"),
+        execution_type: Optional[ExecutionTypeEnum] = Query(None, description="Filter by Execution type"),
 ):
     """
     Retrieve all executions for a specific Snapchat account, paginated.

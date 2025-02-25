@@ -9,9 +9,10 @@ class ModelService:
     @staticmethod
     def get_all_models(
         db: Session,
+        agency_id:int,
         name: Optional[str] = None,
     ) -> List[Model]:
-        query = db.query(Model)
+        query = db.query(Model).filter(Model.agency_id == agency_id)
         if name:
             query = query.filter(Model.name.ilike(f"%{name}%"))
         return query.all()
@@ -21,7 +22,8 @@ class ModelService:
         return db.query(Model).filter(Model.id == model_id).first()
 
     @staticmethod
-    def create_model(db: Session, payload: dict) -> Model:
+    def create_model(db: Session, agency_id:int, payload: dict) -> Model:
+        payload["agency_id"] = agency_id
         model = Model(**payload)
         db.add(model)
         db.commit()

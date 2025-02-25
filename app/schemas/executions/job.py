@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum, ARRAY, DateTime, JSON
+from sqlalchemy import Column, Integer, String, Enum, ARRAY, DateTime, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -11,6 +11,7 @@ class Job(Base):
     __tablename__ = 'jobs'
 
     id = Column(Integer, primary_key=True, index=True)
+    agency_id = Column(Integer, ForeignKey("agencies.id"), nullable=False)
     name = Column(String, unique=True, nullable=False)
     statuses = Column(ARRAY(Enum(AccountStatusEnum, name="account_status_enum")), nullable=True)
     tags = Column(ARRAY(String), nullable=True)
@@ -23,3 +24,4 @@ class Job(Base):
     start_date = Column(DateTime(timezone=False), nullable=True)
     # Relationship with Execution
     executions = relationship("Execution", back_populates="job", cascade="all, delete-orphan")
+    agency = relationship("Agency", back_populates="jobs")

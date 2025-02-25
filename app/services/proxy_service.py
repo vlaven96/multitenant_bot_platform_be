@@ -10,11 +10,11 @@ from app.schemas.snapchat_account import SnapchatAccount
 
 class ProxyService:
     @staticmethod
-    def get_all_proxies(db: Session) -> List[Proxy]:
+    def get_all_proxies(db: Session, agency_id: int) -> List[Proxy]:
         """
-        Retrieves all proxies from the database.
+        Retrieves all proxies from the database that belong to the specified agency.
         """
-        return db.query(Proxy).all()
+        return db.query(Proxy).filter(Proxy.agency_id == agency_id).all()
 
     @staticmethod
     def get_proxy_by_id(db: Session, proxy_id: int) -> Proxy:
@@ -24,7 +24,7 @@ class ProxyService:
         return db.query(Proxy).filter(Proxy.id == proxy_id).first()
 
     @staticmethod
-    def create_proxies(db: Session, payload: Dict[str, List[Dict[str, str]]]) -> List[Proxy]:
+    def create_proxies(db: Session, agency_id:int, payload: Dict[str, List[Dict[str, str]]]) -> List[Proxy]:
         """
         Creates new proxies from a JSON payload.
         """
@@ -53,7 +53,8 @@ class ProxyService:
                     proxy_username=proxy_username,
                     proxy_password=proxy_password,
                     host=host,
-                    port=port
+                    port=port,
+                    agency_id=agency_id
                 )
                 db.add(proxy)
                 created_proxies.append(proxy)
@@ -116,7 +117,7 @@ class ProxyService:
         return True
 
     @staticmethod
-    def get_least_used_proxy(db: Session, max_associations: int = None):
+    def get_least_used_proxy(db: Session, agency_id:int, max_associations: int = None):
         """
         Retrieves the proxy with the least number of SnapchatAccount associations.
         Optionally filters proxies by a maximum number of associations.
@@ -131,6 +132,7 @@ class ProxyService:
         # Query proxies with their association count
         proxy_with_counts = (
             db.query(Proxy, func.count(SnapchatAccount.id).label("association_count"))
+                .filter(Proxy.agency_id == agency_id)
                 .outerjoin(SnapchatAccount, Proxy.id == SnapchatAccount.proxy_id)
                 .group_by(Proxy.id)
                 .order_by(func.count(SnapchatAccount.id).asc())  # Sort by least associations

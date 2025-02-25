@@ -386,15 +386,16 @@ class SnapchatAccountStatisticsService:
         )
 
     @staticmethod
-    def get_overall_statistics(db: Session) -> SnapchatAccountStatsDTO:
+    def get_overall_statistics(db: Session, agency_id: int) -> SnapchatAccountStatsDTO:
         """
-        Retrieves overall statistics for all users.
+        Retrieves overall statistics for Snapchat accounts filtered by agency.
 
         :param db: Database session.
-        :return: A dictionary containing overall statistics for all users.
+        :param agency_id: ID of the agency to filter statistics.
+        :return: A SnapchatAccountStatsDTO containing overall statistics.
         """
         try:
-            # Aggregate statistics for all Snapchat accounts
+            # Aggregate statistics for Snapchat accounts by joining with SnapchatAccount
             aggregated_stats = (
                 db.query(
                     func.sum(SnapchatAccountStats.total_conversations).label("total_conversations"),
@@ -410,6 +411,8 @@ class SnapchatAccountStatisticsService:
                     func.sum(SnapchatAccountStats.rejected_total).label("rejected_total"),
                     func.sum(SnapchatAccountStats.generated_leads).label("generated_leads")
                 )
+                .join(SnapchatAccount, SnapchatAccount.id == SnapchatAccountStats.snapchat_account_id)
+                .filter(SnapchatAccount.agency_id == agency_id)
                 .one()
             )
 
@@ -420,7 +423,7 @@ class SnapchatAccountStatisticsService:
                     message="No statistics found for any Snapchat accounts.",
                 )
 
-            # Return aggregated statistics as a dictionary
+            # Return aggregated statistics as a DTO
             return SnapchatAccountStatsDTO(
                 total_conversations=aggregated_stats.total_conversations or 0,
                 chatbot_conversations=aggregated_stats.chatbot_conversations or 0,
@@ -443,7 +446,7 @@ class SnapchatAccountStatisticsService:
             )
 
     @staticmethod
-    def get_overall_statistics_grouped_by_model(db: Session) -> Dict[int, ModelSnapchatAccountStatsDTO]:
+    def get_overall_statistics_grouped_by_model(db: Session, agency_id:int) -> Dict[int, ModelSnapchatAccountStatsDTO]:
         """
         Retrieves overall statistics for all users, grouped by model, including model names.
 
@@ -470,6 +473,7 @@ class SnapchatAccountStatisticsService:
                     func.sum(SnapchatAccountStats.generated_leads).label("generated_leads")
                 )
                 .join(SnapchatAccount, SnapchatAccountStats.snapchat_account_id == SnapchatAccount.id)
+                .filter(SnapchatAccount.agency_id == agency_id)
                 .outerjoin(Model, Model.id == SnapchatAccount.model_id)  # Join with Model to get model name
                 .group_by(SnapchatAccount.model_id, Model.name)  # Group by model_id and model name
                 .all()
@@ -531,11 +535,12 @@ class SnapchatAccountStatisticsService:
         }
 
     @staticmethod
-    def get_average_time_for_all_statuses(db: Session) -> Dict[str, str]:
+    def get_average_time_for_all_statuses(db: Session, agency_id) -> Dict[str, str]:
         """
-        Calculates the average time spent in each status across all accounts.
+        Calculates the average time spent in each status across all accounts filtered by agency.
 
         :param db: Database session.
+        :param agency_id: The agency id to filter accounts.
         :return: A dictionary mapping status names to average time spent as timedeltas.
         """
         sql = text("""
@@ -544,25 +549,27 @@ class SnapchatAccountStatisticsService:
                     AVG(EXTRACT(epoch FROM (next_changed_at - changed_at))) AS avg_seconds
                 FROM (
                     SELECT
-                        changed_at,
-                        new_status AS current_status,
-                        LEAD(changed_at) OVER (PARTITION BY snapchat_account_id ORDER BY changed_at) AS next_changed_at
-                    FROM snapchat_account_status_log
+                        sal.changed_at,
+                        sal.new_status AS current_status,
+                        LEAD(sal.changed_at) OVER (PARTITION BY sal.snapchat_account_id ORDER BY sal.changed_at) AS next_changed_at
+                    FROM snapchat_account_status_log sal
+                    JOIN snapchat_account sa ON sal.snapchat_account_id = sa.id
+                    WHERE sa.agency_id = :agency_id
                 ) sub
                 WHERE next_changed_at IS NOT NULL
                 GROUP BY current_status
             """)
 
-        results = db.execute(sql).fetchall()
+        results = db.execute(sql, {"agency_id": agency_id}).fetchall()
         avg_times = {}
 
         for row in results:
             status = row.current_status  # Enum or string
             avg_seconds = row.avg_seconds
             status_str = str(status) if isinstance(status, AccountStatusEnum) else status
-            # Convert avg_seconds to float if it's not None
             avg_times[status_str] = SnapchatAccountStatisticsService.format_timedelta_to_days_hours(
-                timedelta(seconds=float(avg_seconds)) if avg_seconds is not None else timedelta(0))
+                timedelta(seconds=float(avg_seconds)) if avg_seconds is not None else timedelta(0)
+            )
 
         return avg_times
 
@@ -581,13 +588,15 @@ class SnapchatAccountStatisticsService:
         return ", ".join(parts) if parts else "0 hours"
 
     @staticmethod
-    def get_average_time_by_source_for_status_exit(db: Session) -> Dict[str, str]:
+    def get_average_time_by_source_for_status_exit(db: Session, agency_id: int) -> Dict[str, str]:
         """
         Calculates the average time for accounts from all sources to transition
-        out of RECENTLY_INGESTED or GOOD_STANDING statuses from account creation.
+        out of RECENTLY_INGESTED or GOOD_STANDING statuses from account creation,
+        filtered by agency.
 
         :param db: Database session.
-        :return: A dictionary mapping each account source to average time as timedelta.
+        :param agency_id: The agency id to filter accounts.
+        :return: A dictionary mapping each account source to average time (formatted as a timedelta).
         """
         sql = text("""
             WITH first_exit AS (
@@ -599,7 +608,8 @@ class SnapchatAccountStatisticsService:
                 FROM snapchat_account sa
                 JOIN snapchat_account_status_log exit_log 
                     ON sa.id = exit_log.snapchat_account_id
-                WHERE exit_log.new_status NOT IN ('RECENTLY_INGESTED', 'GOOD_STANDING')
+                WHERE sa.agency_id = :agency_id
+                  AND exit_log.new_status NOT IN ('RECENTLY_INGESTED', 'GOOD_STANDING')
                   AND exit_log.changed_at > sa.added_to_system_date
                 GROUP BY sa.id, sa.account_source, sa.added_to_system_date
             )
@@ -610,7 +620,7 @@ class SnapchatAccountStatisticsService:
             GROUP BY account_source
         """)
 
-        results = db.execute(sql).fetchall()
+        results = db.execute(sql, {"agency_id": agency_id}).fetchall()
         avg_times: Dict[str, Optional[timedelta]] = {}
 
         for row in results:
@@ -619,7 +629,6 @@ class SnapchatAccountStatisticsService:
             avg_times[source] = timedelta(seconds=float(avg_seconds)) if avg_seconds is not None else None
 
         formatted: Dict[str, str] = {}
-
         for source, duration in avg_times.items():
             if duration is not None:
                 formatted[source] = SnapchatAccountStatisticsService.format_timedelta_to_days_hours(duration)
@@ -629,50 +638,54 @@ class SnapchatAccountStatisticsService:
         return formatted
 
     @staticmethod
-    def get_execution_counts_by_source_until_status_change(db: Session) -> Dict[str, int]:
+    def get_execution_counts_by_source_until_status_change(db: Session, agency_id: int) -> Dict[str, int]:
         """
         Calculates the number of account executions for each account source until
-        the account transitions out of RECENTLY_INGESTED or GOOD_STANDING.
+        the account transitions out of RECENTLY_INGESTED or GOOD_STANDING, filtered by agency.
 
         :param db: Database session.
+        :param agency_id: The agency ID to filter accounts.
         :return: A dictionary mapping each account source to the number of executions.
         """
         sql = text("""
-                WITH first_exit AS (
-                    SELECT
-                        sa.id AS account_id,
-                        sa.account_source,
-                        MIN(exit_log.changed_at) AS first_exit_time
-                    FROM snapchat_account sa
-                    JOIN snapchat_account_status_log exit_log 
-                        ON sa.id = exit_log.snapchat_account_id
-                    WHERE exit_log.new_status NOT IN ('RECENTLY_INGESTED', 'GOOD_STANDING')
-                      AND exit_log.changed_at > sa.added_to_system_date
-                    GROUP BY sa.id, sa.account_source
-                )
+            WITH first_exit AS (
                 SELECT
-                    fe.account_source,
-                    COUNT(ae.id) AS execution_count
-                FROM account_execution ae
-                JOIN first_exit fe ON ae.snap_account_id = fe.account_id
-                WHERE ae.start_time < fe.first_exit_time
-                GROUP BY fe.account_source
-            """)
+                    sa.id AS account_id,
+                    sa.account_source,
+                    MIN(exit_log.changed_at) AS first_exit_time
+                FROM snapchat_account sa
+                JOIN snapchat_account_status_log exit_log 
+                    ON sa.id = exit_log.snapchat_account_id
+                WHERE sa.agency_id = :agency_id
+                  AND exit_log.new_status NOT IN ('RECENTLY_INGESTED', 'GOOD_STANDING')
+                  AND exit_log.changed_at > sa.added_to_system_date
+                GROUP BY sa.id, sa.account_source
+            )
+            SELECT
+                fe.account_source,
+                COUNT(ae.id) AS execution_count
+            FROM account_execution ae
+            JOIN first_exit fe ON ae.snap_account_id = fe.account_id
+            WHERE ae.start_time < fe.first_exit_time
+            GROUP BY fe.account_source
+        """)
 
-        results = db.execute(sql).fetchall()
+        results = db.execute(sql, {"agency_id": agency_id}).fetchall()
         execution_counts = {str(row.account_source): row.execution_count for row in results}
         return execution_counts
 
     @staticmethod
     def select_top_n_snapchat_accounts_optimized(session: Session,
+                                                 agency_id: int,
                                                  n: int,
                                                  weight_rejecting_rate: float,
                                                  weight_conversation_rate: float,
                                                  weight_conversion_rate: float):
         """
-        Optimized selection of top n Snapchat accounts using database-level computations.
+        Optimized selection of top n Snapchat accounts using database-level computations,
+        filtered by agency.
         """
-        # Subquery to compute metrics
+        # Subquery to compute metrics, filtering by agency_id
         metrics_subquery = session.query(
             SnapchatAccountStats.id.label('stat_id'),
             SnapchatAccount.id.label('account_id'),
@@ -684,13 +697,17 @@ class SnapchatAccountStatisticsService:
                 ),
                 0
             ).label('rejecting_rate'),
-            func.coalesce(SnapchatAccountStats.total_conversations /
-                          func.nullif(SnapchatAccountStats.quick_ads_sent, 0), 0).label('conversation_rate'),
+            func.coalesce(
+                SnapchatAccountStats.total_conversations /
+                func.nullif(SnapchatAccountStats.quick_ads_sent, 0),
+                0
+            ).label('conversation_rate'),
             func.coalesce(
                 SnapchatAccountStats.total_conversions /
-                func.nullif(SnapchatAccountStats.conversations_charged, 0), 0
+                func.nullif(SnapchatAccountStats.conversations_charged, 0),
+                0
             ).label('conversion_rate')
-        ).join(SnapchatAccount).subquery()
+        ).join(SnapchatAccount).filter(SnapchatAccount.agency_id == agency_id).subquery()
 
         # Aggregates for normalization
         aggregates = session.query(
@@ -703,7 +720,7 @@ class SnapchatAccountStatisticsService:
         max_conversation_rate = aggregates.max_conversation_rate or 1
         max_conversion_rate = aggregates.max_conversion_rate or 1
 
-        # Final query with score calculation
+        # Final query with score calculation, ensuring the agency filter is applied
         final_query = session.query(
             SnapchatAccount,
             (
@@ -713,7 +730,8 @@ class SnapchatAccountStatisticsService:
             ).label('score')
         ).join(SnapchatAccountStats, SnapchatAccountStats.snapchat_account_id == SnapchatAccount.id
                ).join(metrics_subquery, metrics_subquery.c.stat_id == SnapchatAccountStats.id
-                      ).order_by(desc('score')).limit(n)
+                      ).filter(SnapchatAccount.agency_id == agency_id
+                               ).order_by(desc('score')).limit(n)
 
         # Execute query and fetch results
         results = final_query.all()
@@ -725,21 +743,23 @@ class SnapchatAccountStatisticsService:
 
     @staticmethod
     def get_all_snapchat_accounts_with_scores(session: Session,
+                                              agency_id: int,
                                               weight_rejecting_rate: float,
                                               weight_conversation_rate: float,
                                               weight_conversion_rate: float) -> List[SnapchatAccountScoreDTO]:
         """
         Retrieves all Snapchat accounts with their rejecting rate, conversation rate,
-        total conversions, and computed score based on provided weights.
+        total conversions, and computed score based on provided weights, filtered by agency.
 
         :param session: Database session.
+        :param agency_id: The agency ID to filter accounts.
         :param weight_rejecting_rate: Weight for rejecting rate.
         :param weight_conversation_rate: Weight for conversation rate.
-        :param weight_conversion_rate: Weight for total conversions.
+        :param weight_conversion_rate: Weight for conversion rate.
         :return: A list of dictionaries with Snapchat account details and calculated scores.
         """
 
-        # Subquery to compute individual metrics per account
+        # Subquery to compute individual metrics per account, filtered by agency_id
         metrics_subquery = session.query(
             SnapchatAccountStats.id.label('stat_id'),
             SnapchatAccount.id.label('account_id'),
@@ -748,17 +768,21 @@ class SnapchatAccountStatisticsService:
                 SnapchatAccountStats.rejected_total /
                 func.nullif(
                     SnapchatAccountStats.rejected_total + SnapchatAccountStats.quick_ads_sent + SnapchatAccountStats.generated_leads,
-                    0), 0
+                    0
+                ),
+                0
             ).label('rejecting_rate'),
             func.coalesce(
                 SnapchatAccountStats.total_conversations /
-                func.nullif(SnapchatAccountStats.quick_ads_sent, 0), 0
+                func.nullif(SnapchatAccountStats.quick_ads_sent, 0),
+                0
             ).label('conversation_rate'),
             func.coalesce(
                 SnapchatAccountStats.total_conversions /
-                func.nullif(SnapchatAccountStats.conversations_charged, 0), 0
+                func.nullif(SnapchatAccountStats.conversations_charged, 0),
+                0
             ).label('conversion_rate')
-        ).join(SnapchatAccount).subquery()
+        ).join(SnapchatAccount).filter(SnapchatAccount.agency_id == agency_id).subquery()
 
         # Aggregates for normalization
         aggregates = session.query(
@@ -771,7 +795,7 @@ class SnapchatAccountStatisticsService:
         max_conversation_rate = aggregates.max_conversation_rate or 1
         max_conversion_rate = aggregates.max_conversion_rate or 1
 
-        # Final query to retrieve accounts with their metrics and computed score
+        # Final query to retrieve accounts with their metrics and computed score, filtered by agency_id
         final_query = session.query(
             SnapchatAccount.id.label('account_id'),
             SnapchatAccount.username.label('username'),
@@ -787,7 +811,8 @@ class SnapchatAccountStatisticsService:
             SnapchatAccountStats, SnapchatAccountStats.snapchat_account_id == SnapchatAccount.id
         ).join(
             metrics_subquery, metrics_subquery.c.stat_id == SnapchatAccountStats.id
-        ).order_by(desc('score'))
+        ).filter(SnapchatAccount.agency_id == agency_id
+                 ).order_by(desc('score'))
 
         # Fetch results
         results = final_query.all()
@@ -808,12 +833,13 @@ class SnapchatAccountStatisticsService:
         return accounts_with_scores
 
     @staticmethod
-    def get_daily_account_stats(session: Session, days: int) -> List[DailyAccountStatsDTO]:
+    def get_daily_account_stats(session: Session, agency_id: int, days: int) -> List[DailyAccountStatsDTO]:
         """
-        Fetches daily account statistics over a given number of days.
+        Fetches daily account statistics over a given number of days, filtered by agency.
 
         Args:
             session (Session): SQLAlchemy session object.
+            agency_id (int): Agency ID to filter accounts.
             days (int): Number of past days to fetch data for.
 
         Returns:
@@ -833,9 +859,11 @@ class SnapchatAccountStatisticsService:
                     )
                 ).label("total_quick_ads_sent"),
             )
+            .join(SnapchatAccount, SnapchatAccount.id == AccountExecution.snap_account_id)
             .filter(
                 AccountExecution.start_time >= datetime.utcnow() - timedelta(days=days),
-                AccountExecution.type.in_([ExecutionTypeEnum.QUICK_ADDS, ExecutionTypeEnum.CONSUME_LEADS])
+                AccountExecution.type.in_([ExecutionTypeEnum.QUICK_ADDS, ExecutionTypeEnum.CONSUME_LEADS]),
+                SnapchatAccount.agency_id == agency_id
             )
             .group_by(func.date(AccountExecution.start_time))
             .order_by(func.date(AccountExecution.start_time))
@@ -846,12 +874,14 @@ class SnapchatAccountStatisticsService:
     @staticmethod
     def count_daily_chatbot_run_accounts(
             db: Session,
+            agency_id: int
     ) -> int:
         """
         Counts the number of Snapchat accounts matching the given filters.
 
         Args:
             db (Session): SQLAlchemy session object.
+            agency_id (int): The agency ID to filter accounts.
 
         Returns:
             int: Count of matching Snapchat accounts.
@@ -860,6 +890,9 @@ class SnapchatAccountStatisticsService:
 
         statuses = [AccountStatusEnum.GOOD_STANDING]
         query = query.filter(SnapchatAccount.status.in_(statuses))
+
+        # Filter by agency_id
+        query = query.filter(SnapchatAccount.agency_id == agency_id)
 
         query = query.filter(
             exists().where(

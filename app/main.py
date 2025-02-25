@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 import uvicorn
 import sys
 import os
@@ -17,6 +17,7 @@ from app.routers import job_router
 from app.routers import workflow_router
 from app.routers import  validator_router
 from app.routers import statistic_router
+from app.routers import agency_router
 from app.services.job_scheduler_manager import SchedulerManager
 from app.utils.database_resource_creator import create_default_admin, import_airtable, associate_accounts_with_model, \
     associate_accounts_with_chatbot
@@ -104,24 +105,33 @@ app.add_middleware(
     allow_methods=["*"],  # Allow all HTTP methods (POST, GET, etc.)
     allow_headers=["*"],  # Allow all headers
 )
-# create_default_admin()
-# import_airtable()
-# associate_accounts_with_model("Leah", "https://onlyfans.com/leahdreams")
-# associate_accounts_with_chatbot()
+
+# Create main_router with "/agency/{agency_id}" for multi-tenant routes
+main_router = APIRouter(prefix="/agency/{agency_id}")
+
+# Include multi-tenant routers inside `main_router`
+main_router.include_router(snapchat_account_router.router)
+main_router.include_router(proxy_router.router)
+main_router.include_router(execution_router.router)
+main_router.include_router(model_router.router)
+main_router.include_router(chatbot_router.router)
+main_router.include_router(tags_router.router)
+main_router.include_router(job_router.router)
+main_router.include_router(workflow_router.router)
+main_router.include_router(validator_router.router)
+main_router.include_router(statistic_router.router)
+
+# Include the agency router separately (no agency_id prefix needed)
+app.include_router(agency_router.router)  # Global agency management
+
+# 🚀 FIX: Add `main_router` to `app` so nested routes are visible
+app.include_router(main_router)
+
+# Include non-agency-scoped routes
 app.include_router(auth_router.router)
 app.include_router(admin_router.router)
-app.include_router(snapchat_account_router.router)
-app.include_router(proxy_router.router)
-app.include_router(execution_router.router)
 app.include_router(api_keys_router.router)
 app.include_router(cookie_router.router)
-app.include_router(model_router.router)
-app.include_router(chatbot_router.router)
-app.include_router(tags_router.router)
-app.include_router(job_router.router)
-app.include_router(workflow_router.router)
-app.include_router(validator_router.router)
-app.include_router(statistic_router.router)
 
 @app.get("/")
 def read_root():

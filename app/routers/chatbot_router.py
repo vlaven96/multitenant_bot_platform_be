@@ -4,45 +4,49 @@ from typing import List, Optional
 from app.database import get_db
 from app.dtos.chatbot_dtos import ChatBotResponse, ChatBotCreate, ChatBotUpdate
 from app.services.chatbot_service import ChatBotService
-from app.utils.security import get_current_user
+from app.utils.security import get_current_user, get_agency_id
 
 router = APIRouter(
     prefix="/chatbots",
     tags=["chatbots"]
 )
 
+
 @router.get("/", response_model=List[ChatBotResponse])
 def get_all_chatbots(
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(get_current_user),
+        agency_id: int = Depends(get_agency_id),
 ):
     """
     Retrieves all chatbots.
     """
-    return ChatBotService.get_all_chatbots(db)
+    return ChatBotService.get_all_chatbots(db, agency_id)
 
 
 @router.post("/", response_model=ChatBotResponse)
 def create_chatbot(
-    chatbot_data: ChatBotCreate = Body(...),
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+        chatbot_data: ChatBotCreate = Body(...),
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(get_current_user),
+        agency_id: int = Depends(get_agency_id),
 ):
     """
     Creates a new chatbot.
     """
     try:
-        return ChatBotService.create_chatbot(db, chatbot_data)
+        return ChatBotService.create_chatbot(db, agency_id, chatbot_data)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.put("/{chatbot_id}", response_model=ChatBotResponse)
 def update_chatbot(
-    chatbot_id: int,
-    chatbot_data: ChatBotUpdate = Body(...),
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+        chatbot_id: int,
+        chatbot_data: ChatBotUpdate = Body(...),
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(get_current_user),
+        agency_id: int = Depends(get_agency_id),
 ):
     """
     Updates a chatbot by its ID.
@@ -55,10 +59,11 @@ def update_chatbot(
 
 @router.patch("/{chatbot_id}", response_model=ChatBotResponse)
 def partially_update_chatbot(
-    chatbot_id: int,
-    chatbot_data: ChatBotUpdate = Body(...),
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+        chatbot_id: int,
+        chatbot_data: ChatBotUpdate = Body(...),
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(get_current_user),
+        agency_id: int = Depends(get_agency_id),
 ):
     """
     Partially updates a chatbot by its ID.
@@ -68,11 +73,13 @@ def partially_update_chatbot(
         raise HTTPException(status_code=404, detail="ChatBot not found.")
     return chatbot
 
+
 @router.delete("/{chatbot_id}", response_model=dict)
 def delete_chatbot(
-    chatbot_id: int,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+        chatbot_id: int,
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(get_current_user),
+        agency_id: int = Depends(get_agency_id),
 ):
     """
     Deletes a chatbot by its ID.

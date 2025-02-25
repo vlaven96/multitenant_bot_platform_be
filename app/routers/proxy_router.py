@@ -4,7 +4,7 @@ from typing import List, Dict, Optional
 from app.dtos.proxy_response import ProxyResponse
 from app.database import get_db
 from app.services.proxy_service import ProxyService
-from app.utils.security import get_current_user, authenticate_user_or_api_key
+from app.utils.security import get_current_user, authenticate_user_or_api_key, get_agency_id
 
 router = APIRouter(
     prefix="/proxies",
@@ -15,17 +15,19 @@ router = APIRouter(
 @router.get("/", response_model=List[ProxyResponse])
 def get_all_proxies(
     db: Session = Depends(get_db),
+    agency_id: int = Depends(get_agency_id),
     current_user: dict = Depends(get_current_user)
 ):
     """
     Retrieves all proxies from the database.
     """
-    return ProxyService.get_all_proxies(db)
+    return ProxyService.get_all_proxies(db, agency_id)
 
 @router.get("/least_used", response_model=ProxyResponse)
 def get_least_used_proxy(
     max_associations: Optional[int] = None,
     db: Session = Depends(get_db),
+    agency_id: int = Depends(get_agency_id),
     auth: str = Depends(authenticate_user_or_api_key),
     x_api_key: Optional[str] = Header(None),
 ):
@@ -34,7 +36,7 @@ def get_least_used_proxy(
     Optionally, a maximum number of allowed associations can be specified.
     If no proxy meets the criteria, a 404 error is returned.
     """
-    proxy = ProxyService.get_least_used_proxy(db, max_associations)
+    proxy = ProxyService.get_least_used_proxy(db, agency_id, max_associations)
     if not proxy:
         raise HTTPException(status_code=404, detail="No suitable proxy found.")
     return proxy
@@ -43,7 +45,8 @@ def get_least_used_proxy(
 def get_proxy(
     proxy_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    agency_id: int = Depends(get_agency_id),
 ):
     """
     Retrieves a specific proxy by its ID.
@@ -57,14 +60,15 @@ def get_proxy(
 def create_proxies(
     payload: dict = Body(..., description="JSON payload with a 'data' field containing proxy details."),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    agency_id: int = Depends(get_agency_id),
 ):
     """
     Creates new proxies from a JSON payload.
     The payload should be a list of proxy objects with fields: proxy_username, proxy_password, host, port.
     """
     try:
-        return ProxyService.create_proxies(db, payload)
+        return ProxyService.create_proxies(db, agency_id, payload)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -72,7 +76,8 @@ def create_proxies(
 def delete_proxy(
     proxy_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    agency_id: int = Depends(get_agency_id),
 ):
     """
     Deletes a proxy by its ID.

@@ -86,6 +86,7 @@ class SnapchatAccountService:
     @staticmethod
     def get_all_accountsV2(
             db: Session,
+            agency_id: int,
             username: Optional[str] = None,
             creation_date_from: Optional[datetime] = None,
             creation_date_to: Optional[datetime] = None,
@@ -118,7 +119,7 @@ class SnapchatAccountService:
         ]
 
         query = db.query(SnapchatAccount).options(*load_options)
-
+        query = query.filter(SnapchatAccount.agency_id == agency_id)
         # --- Apply Filters ---
         if username:
             query = query.filter(SnapchatAccount.username.ilike(f"%{username}%"))
@@ -247,6 +248,7 @@ class SnapchatAccountService:
 
     @staticmethod
     def create_accounts_from_string(db: Session,
+                                    agency_id:int,
                                     data: str,
                                     account_source: Optional[str] = None,
                                     model_id: Optional[int] = None,
@@ -363,7 +365,8 @@ class SnapchatAccountService:
                     workflow_id=workflow_id,
                     account_source=account_source or 'EXTERNAL',
                     email=email,
-                    email_password=email_password
+                    email_password=email_password,
+                    agency_id=agency_id
                 )
                 db.add(account)
                 accounts.append(account)
@@ -468,25 +471,27 @@ class SnapchatAccountService:
     def create_and_attach_cookies(db: Session, username: str, data: dict):
         # Lookup the account based on the username
         account = db.query(SnapchatAccount).filter(SnapchatAccount.username == username).first()
-
         if not account:
             return None  # If account is not found, return None
 
-        # Create new cookies and associate it with the account
-        new_cookie = Cookies(
-            data=data,
-            snapchat_account_id=account.id  # Use correct foreign key field here
-        )
+        if account.cookies:
+            # Replace the data in the existing cookies record
+            account.cookies.data = data
+            db.commit()
+            db.refresh(account.cookies)
+        else:
+            # Create new cookies and associate it with the account
+            new_cookie = Cookies(
+                data=data,
+                snapchat_account_id=account.id  # Use correct foreign key field here
+            )
+            db.add(new_cookie)
+            db.commit()  # Commit the transaction to save the new cookie
+            db.refresh(new_cookie)  # Refresh the instance to get the updated data
+            account.cookies = new_cookie  # This associates the cookie with the account
+            db.commit()  # Commit the changes
 
-        db.add(new_cookie)
-        db.commit()  # Commit the transaction to save the new cookie
-        db.refresh(new_cookie)  # Refresh the instance to get the updated data
-
-        # Optionally, associate cookies with the account (if not automatically done)
-        account.cookies = new_cookie  # This associates the cookie with the account
-        db.commit()  # Commit the changes
-
-        # Return the updated account (including the new cookie)
+        # Return the updated account (including the new/updated cookie)
         return account
 
     @staticmethod
@@ -527,20 +532,27 @@ class SnapchatAccountService:
         )
 
     @staticmethod
-    def get_all_distinct_tags(db: Session) -> List[str]:
+    def get_all_distinct_tags(db: Session, agency_id:int) -> List[str]:
         """
         Retrieve all distinct tags from Snapchat accounts and workflow steps.
         :param db: SQLAlchemy Session object.
         :return: List of distinct tags.
         """
         # Tags from SnapchatAccount
-        snapchat_tags_query = db.query(func.distinct(func.unnest(SnapchatAccount.tags))).all()
+        snapchat_tags_query = (
+            db.query(func.distinct(func.unnest(SnapchatAccount.tags)))
+            .filter(SnapchatAccount.agency_id == agency_id)
+            .all()
+        )
         snapchat_tags = [tag[0] for tag in snapchat_tags_query if tag[0] is not None]
 
         # Tags from WorkflowStep (action_value where action_type is ADD_TAG or REMOVE_TAG)
         workflow_tags_query = (
             db.query(func.distinct(WorkflowStep.action_value))
-            .filter(WorkflowStep.action_type.in_([WorkflowStepTypeEnum.ADD_TAG, WorkflowStepTypeEnum.REMOVE_TAG]))
+            .filter(
+                WorkflowStep.action_type.in_([WorkflowStepTypeEnum.ADD_TAG, WorkflowStepTypeEnum.REMOVE_TAG]),
+                Workflow.agency_id == agency_id
+            )
             .all()
         )
         workflow_tags = [tag[0] for tag in workflow_tags_query if tag[0] is not None]
@@ -564,14 +576,16 @@ class SnapchatAccountService:
         return [status.value for status in AccountStatusEnum]
 
     @staticmethod
-    def get_snapchat_account_sources(db: Session) -> list[str]:
+    def get_snapchat_account_sources(db: Session, agency_id: int) -> list[str]:
         """
-        Service to retrieve all unique statuses from the SnapchatAccount table.
+        Service to retrieve all unique account sources from the SnapchatAccount table,
+        filtered by the given agency_id.
         """
-        # Query distinct statuses
-        sources = db.execute(
+        stmt = (
             select(distinct(SnapchatAccount.account_source))
-        ).scalars().all()
+            .where(SnapchatAccount.agency_id == agency_id)
+        )
+        sources = db.execute(stmt).scalars().all()
 
         # Convert Enum values to string if necessary
         return sources
@@ -579,6 +593,7 @@ class SnapchatAccountService:
     @staticmethod
     def get_accounts_for_termination(
             db: Session,
+            agency_id:int
     ) -> List[SnapchatAccount]:
         excluded_statuses = [
             AccountStatusEnum.RECENTLY_INGESTED,
@@ -588,7 +603,8 @@ class SnapchatAccountService:
         ]
 
         query = db.query(SnapchatAccount).filter(
-            ~SnapchatAccount.status.in_(excluded_statuses)
+            ~SnapchatAccount.status.in_(excluded_statuses),
+            SnapchatAccount.agency_id == agency_id
         ).order_by(asc(SnapchatAccount.status))
 
         return query.all()

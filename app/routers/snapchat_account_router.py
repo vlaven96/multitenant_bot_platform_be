@@ -12,7 +12,7 @@ from app.models.account_status_enum import AccountStatusEnum
 from app.database import get_db
 from app.services.snapchat_account_service import SnapchatAccountService
 from app.services.snapchat_account_statistics_service import SnapchatAccountStatisticsService
-from app.utils.security import get_current_user, authenticate_user_or_api_key
+from app.utils.security import get_current_user, authenticate_user_or_api_key, get_agency_id
 
 router = APIRouter(
     prefix="/accounts",
@@ -21,6 +21,7 @@ router = APIRouter(
 
 @router.get("/", response_model=Union[List[SnapchatAccountResponse], List[SnapchatAccountResponseV2]])
 def get_all_accounts(
+        agency_id: int = Depends(get_agency_id),
         db: Session = Depends(get_db),
         auth: str = Depends(authenticate_user_or_api_key),
         x_api_key: Optional[str] = Header(None),
@@ -38,6 +39,7 @@ def get_all_accounts(
 ):
     snapchat_accounts = SnapchatAccountService.get_all_accountsV2(
         db=db,
+        agency_id=agency_id,
         username=username,
         creation_date_from=creation_date_from,
         creation_date_to=creation_date_to,
@@ -65,27 +67,9 @@ def get_all_accounts(
             full_response.append(SnapchatAccountResponse.from_orm(acct))
         return full_response
 
-@router.get("/providers", response_model=List[SnapchatAccountSimpleResponse])
-def get_accounts_for_termination(
-    db: Session = Depends(get_db),
-    auth: str = Depends(authenticate_user_or_api_key),
-    x_api_key: Optional[str] = Header(None),
-):
-    """
-    Retrieves all accounts that are candidates for termination based on specified filters.
-    """
-    try:
-        accounts = SnapchatAccountService.get_accounts_for_termination(
-            db=db,
-        )
-        if not accounts:
-            raise HTTPException(status_code=404, detail="No accounts found for termination.")
-        return accounts
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-
 @router.get("/candidates-for-termination", response_model=List[SnapchatAccountSimpleResponse])
 def get_accounts_for_termination(
+    agency_id: int = Depends(get_agency_id),
     db: Session = Depends(get_db),
     auth: str = Depends(authenticate_user_or_api_key),
     x_api_key: Optional[str] = Header(None),
@@ -96,6 +80,7 @@ def get_accounts_for_termination(
     try:
         accounts = SnapchatAccountService.get_accounts_for_termination(
             db=db,
+            agency_id=agency_id
         )
         if not accounts:
             raise HTTPException(status_code=404, detail="No accounts found for termination.")
@@ -105,6 +90,7 @@ def get_accounts_for_termination(
 
 @router.patch("/terminate", response_model=dict)
 def terminate_accounts(
+    agency_id: int = Depends(get_agency_id),
     account_ids: List[int] = Body(..., description="List of account IDs to be terminated."),
     db: Session = Depends(get_db),
     auth: str = Depends(authenticate_user_or_api_key),
@@ -126,6 +112,7 @@ def terminate_accounts(
 def bulk_update_accounts(
     payload: BulkUpdatePayload,  # automatically parses JSON into this Pydantic model
     db: Session = Depends(get_db),
+    agency_id: int = Depends(get_agency_id),
     auth: str = Depends(authenticate_user_or_api_key),
     x_api_key: Optional[str] = Header(None),
 ):
@@ -170,6 +157,7 @@ def get_account(
     account_id: int,
     include_executions: bool = Query(False, description="Include account_executions or not?"),
     db: Session = Depends(get_db),
+    agency_id: int = Depends(get_agency_id),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -193,6 +181,7 @@ def update_account(
     db: Session = Depends(get_db),
     auth: str = Depends(authenticate_user_or_api_key),
     x_api_key: Optional[str] = Header(None),
+    agency_id: int = Depends(get_agency_id),
 ):
     """
     Updates a Snapchat account by its ID with the provided fields.
@@ -214,6 +203,7 @@ def create_accounts(
     trigger_execution: bool = Body(False, description="Boolean flag to trigger execution."),
     db: Session = Depends(get_db),
     auth: str = Depends(authenticate_user_or_api_key),
+    agency_id: int = Depends(get_agency_id),
     x_api_key: Optional[str] = Header(None),
 ):
     """
@@ -223,7 +213,7 @@ def create_accounts(
         data = payload.get("data")
         if not isinstance(data, str):
             raise ValueError("Invalid payload. 'data' field must be a string.")
-        return SnapchatAccountService.create_accounts_from_string(db, data, account_source, model_id, chatbot_id, workflow_id, trigger_execution, pattern)
+        return SnapchatAccountService.create_accounts_from_string(db, agency_id, data, account_source, model_id, chatbot_id, workflow_id, trigger_execution, pattern)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -233,6 +223,7 @@ def create_cookies_for_account(
         cookies_payload: dict = Body(...,
                                      description="JSON payload containing cookies data."),
         db: Session = Depends(get_db),
+        agency_id: int = Depends(get_agency_id),
         auth: str = Depends(authenticate_user_or_api_key),
         x_api_key: Optional[str] = Header(None),
 ):
@@ -258,6 +249,7 @@ def update_account_by_username(
     username: str,
     payload: dict = Body(..., description="JSON payload with fields to update."),
     db: Session = Depends(get_db),
+    agency_id: int = Depends(get_agency_id),
     auth: str = Depends(authenticate_user_or_api_key),
     x_api_key: Optional[str] = Header(None),
 ):
@@ -276,6 +268,7 @@ def update_account_by_username(
 def get_account_by_username(
     username: str,
     db: Session = Depends(get_db),
+    agency_id: int = Depends(get_agency_id),
     auth: str = Depends(authenticate_user_or_api_key),
     x_api_key: Optional[str] = Header(None),
 ):
@@ -296,6 +289,7 @@ def get_account_by_username(
 def get_account_edit_data(
     account_id: int,
     db: Session = Depends(get_db),
+    agency_id: int = Depends(get_agency_id),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -310,21 +304,21 @@ def get_account_edit_data(
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 @router.get("/statuses/list", response_model=list[str])
-def retrieve_snapchat_account_statuses(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+def retrieve_snapchat_account_statuses(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user),agency_id: int = Depends(get_agency_id),):
     """
     Endpoint to retrieve all unique statuses from the SnapchatAccount table.
     """
     return SnapchatAccountService.get_snapchat_account_statuses(db)
 
 @router.get("/sources/list", response_model=list[str])
-def retrieve_snapchat_account_sources(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+def retrieve_snapchat_account_sources(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user), agency_id: int = Depends(get_agency_id),):
     """
     Endpoint to retrieve all unique statuses from the SnapchatAccount table.
     """
-    return SnapchatAccountService.get_snapchat_account_sources(db)
+    return SnapchatAccountService.get_snapchat_account_sources(db, agency_id)
 
 @router.get("/{account_id}/statistics", response_model=SnapchatAccountStatsDTO)
-def get_user_statistics(account_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+def get_user_statistics(account_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user), agency_id: int = Depends(get_agency_id),):
     """
     Endpoint to retrieve user statistics.
 
@@ -337,7 +331,7 @@ def get_user_statistics(account_id: int, db: Session = Depends(get_db), current_
     return statistics_dto
 
 @router.get("/{account_id}/timeline-statistics", response_model=SnapchatAccountTimelineStatisticsDTO)
-def get_user_timeline_statistics(account_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+def get_user_timeline_statistics(account_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user), agency_id: int = Depends(get_agency_id),):
     """
     Endpoint to retrieve user timeline statistics.
 

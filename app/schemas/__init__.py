@@ -17,3 +17,4 @@ from app.schemas.workflow.workflow_step import WorkflowStep
 from app.schemas.workflow.workflow import Workflow
 from app.schemas.snapchat_checked_accounts.snapchat_allowed_user import SnapchatAllowedUser
 from app.schemas.snapchat_checked_accounts.snapchat_rejected_user import SnapchatRejectedUser
+from app.schemas.agency import Agency

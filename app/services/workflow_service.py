@@ -16,7 +16,7 @@ from sqlalchemy import func, desc, and_
 class WorkflowsService:
 
     @staticmethod
-    def create_workflow(db: Session, workflow_create: WorkflowCreateRequest) -> Workflow:
+    def create_workflow(db: Session, agency_id:int, workflow_create: WorkflowCreateRequest) -> Workflow:
         # Create the workflow
         if not workflow_create.name or not isinstance(workflow_create.name, str):
             raise ValueError("Workflow name must be a non-empty string.")
@@ -28,7 +28,7 @@ class WorkflowsService:
             if not isinstance(step.action_value, str):
                 raise ValueError(f"Step action_value must be a string: {step.action_value}.")
 
-        workflow = Workflow(name=workflow_create.name, description=workflow_create.description, status = workflow_create.status)
+        workflow = Workflow(name=workflow_create.name, description=workflow_create.description, status = workflow_create.status, agency_id = agency_id)
         db.add(workflow)
         db.commit()
         db.refresh(workflow)
@@ -49,16 +49,17 @@ class WorkflowsService:
         return workflow
 
     @staticmethod
-    def list_workflows(db: Session, name_filter: Optional[str] = None) -> List[Workflow]:
+    def list_workflows(db: Session, agency_id: int, name_filter: Optional[str] = None) -> List[Workflow]:
         query = db.query(Workflow).options(joinedload(Workflow.steps))
+        query = query.filter(Workflow.agency_id == agency_id)
         if name_filter:
             query = query.filter(Workflow.name.ilike(f"%{name_filter}%"))
         workflows = query.all()
         return workflows
 
     @staticmethod
-    def list_workflows_simplified(db: Session) -> List[WorkflowSimplifiedNameResponse]:
-        workflows = db.query(Workflow).all()
+    def list_workflows_simplified(db: Session, agency_id: int) -> List[WorkflowSimplifiedNameResponse]:
+        workflows = db.query(Workflow).filter(Workflow.agency_id == agency_id).all()
         return [
             WorkflowSimplifiedNameResponse(id=workflow.id, name=workflow.name)
             for workflow in workflows

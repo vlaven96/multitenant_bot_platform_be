@@ -24,4 +24,4 @@ class Proxy(Base):
         cascade="save-update, merge"
     )
 
-    agency = relationship("Agency", back_populates="proxy")
+    agency = relationship("Agency", back_populates="proxies")

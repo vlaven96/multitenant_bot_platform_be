@@ -9,7 +9,6 @@ from app.utils.security import get_admin_user
 from sqlalchemy.orm import Session
 from app.database import engine
 from app.schemas.user import User
-from pydantic import StrictBool
 
 
 router = APIRouter(

@@ -12,6 +12,7 @@ class Execution(Base):
     __tablename__ = 'execution'
 
     id = Column(Integer, primary_key=True, index=True)
+    agency_id = Column(Integer, ForeignKey("agencies.id"), nullable=False)
     type = Column(Enum(ExecutionTypeEnum), nullable=False)
     start_time = Column(DateTime, default=datetime.utcnow, nullable=False)
     end_time = Column(DateTime, nullable=True)
@@ -27,6 +28,7 @@ class Execution(Base):
 
     # Relationship with Job
     job = relationship("Job", back_populates="executions")
+    agency = relationship("Agency", back_populates="executions")
 
     __table_args__ = (
         Index('idx_execution_type', 'type'),
