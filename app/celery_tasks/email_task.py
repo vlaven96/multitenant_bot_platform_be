@@ -3,7 +3,7 @@ from fastapi_mail import MessageSchema, FastMail
 import asyncio
 
 import logging
-from app.config import settings
+from app.config import settings, email_settings
 
 logger = logging.getLogger(__name__)
 class EmailTaskManager:
@@ -21,7 +21,7 @@ class EmailTaskManager:
             ),
             subtype="plain"
         )
-        fm = FastMail(settings.mail_config)
+        fm = FastMail(email_settings.mail_config)
         # Use the synchronous send_message method
         try:
             # Run the async send_message in a synchronous context.

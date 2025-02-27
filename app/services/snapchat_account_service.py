@@ -280,6 +280,7 @@ class SnapchatAccountService:
         proxies = (
             db.query(Proxy, func.count(SnapchatAccount.id).label("account_count"))
                 .outerjoin(SnapchatAccount, Proxy.id == SnapchatAccount.proxy_id)
+                .filter(Proxy.agency_id == agency_id)
                 .group_by(Proxy.id)
                 .order_by(func.count(SnapchatAccount.id).asc())  # Sort by least usage
                 .all()
@@ -290,6 +291,7 @@ class SnapchatAccountService:
         models = (
             db.query(Model, func.count(SnapchatAccount.id).label("account_count"))
                 .outerjoin(SnapchatAccount, Model.id == SnapchatAccount.model_id)
+                .filter(Model.agency_id == agency_id)
                 .group_by(Model.id)
                 .order_by(func.count(SnapchatAccount.id).asc())  # Sort by least usage
                 .all()
@@ -300,6 +302,7 @@ class SnapchatAccountService:
         chatbots = (
             db.query(ChatBot, func.count(SnapchatAccount.id).label("account_count"))
                 .outerjoin(SnapchatAccount, ChatBot.id == SnapchatAccount.chatbot_id)
+                .filter(ChatBot.agency_id == agency_id)
                 .group_by(ChatBot.id)
                 .order_by(func.count(SnapchatAccount.id).asc())  # Sort by least usage
                 .all()
@@ -402,7 +405,8 @@ class SnapchatAccountService:
                     type=ExecutionTypeEnum.CHECK_CONVERSATIONS,
                     triggered_by="SYSTEM",
                     configuration=configuration_map,
-                    status=StatusEnum.STARTED
+                    status=StatusEnum.STARTED,
+                    agency_id=agency_id
                 )
                 db.add(new_execution)
                 db.commit()
@@ -499,7 +503,7 @@ class SnapchatAccountService:
         return db.query(SnapchatAccount).filter(SnapchatAccount.username == username).first()
 
     @staticmethod
-    def get_account_edit_data(db: Session, account_id: int) -> SnapchatAccountEditResponse:
+    def get_account_edit_data(db: Session, agency_id:int, account_id: int) -> SnapchatAccountEditResponse:
         """
         Fetch all data necessary for the edit page of a Snapchat account.
         """
@@ -508,15 +512,16 @@ class SnapchatAccountService:
         if not account:
             raise ValueError("Snapchat account not found.")
 
-        proxies = db.query(Proxy).all()
+        proxies = db.query(Proxy).filter(Proxy.agency_id==agency_id).all()
 
-        models = db.query(Model).all()
+        models = db.query(Model).filter(Model.agency_id==agency_id).all()
 
-        chat_bots = db.query(ChatBot).all()
+        chat_bots = db.query(ChatBot).filter(ChatBot.agency_id==agency_id).all()
 
-        workflows = db.query(Workflow).all()
+        workflows = db.query(Workflow).filter(Workflow.agency_id==agency_id).all()
 
-        tags = db.query(SnapchatAccount.tags).distinct().all()
+        tags = db.query(SnapchatAccount.tags).filter(SnapchatAccount.agency_id == agency_id).distinct().all()
+
         unique_tags = set(tag for row in tags for tag in (row.tags or []))
 
         statuses = [status.name for status in AccountStatusEnum]

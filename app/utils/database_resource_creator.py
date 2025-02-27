@@ -5,7 +5,6 @@ from app.schemas.chatbot import ChatBot
 from app.schemas.model import Model
 from app.schemas.snapchat_account import SnapchatAccount
 from app.schemas.user import User
-from app.services.airtable_importer_service import AirtableImporterService
 from sqlalchemy.future import select
 
 from app.utils.security import hash_password
@@ -43,12 +42,6 @@ def create_default_admin():
 
     print("Default admin user created: username='admin', password='adminpassword'")
 
-def import_airtable():
-    session = Session(bind=engine)
-    accounts_exists = session.query(SnapchatAccount).first()
-    if not accounts_exists:
-        airtable_importer = AirtableImporterService()
-        airtable_importer.import_objects()
 
 
 def associate_accounts_with_model(model_name: str, onlyfans_url: str):

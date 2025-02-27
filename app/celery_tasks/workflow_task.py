@@ -8,6 +8,7 @@ from app.database import SessionLocal
 from app.models.workflow_step_type_enum import WorkflowStepTypeEnum
 from app.schemas import SnapchatAccount
 from app.schemas.workflow.workflow import Workflow
+from app.services.subscription_service import SubscriptionService
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,10 @@ class WorkflowTaskManager:
                 for workflow in workflows:
                     try:
                         logger.info(f"[WORKFLOW_EXECUTION_JOB]* Processing workflow: {workflow.name} (ID: {workflow.id})")
-
+                        if not SubscriptionService.is_subscription_available(db, workflow.agency_id):
+                            logger.info(
+                                f"[WORKFLOW_EXECUTION_JOB]* Workflow: {workflow.name} (ID: {workflow.id}) was not executed because subscription is expired")
+                            continue
                         # Fetch accounts associated with the workflow
                         snapchat_accounts = []
                         try:

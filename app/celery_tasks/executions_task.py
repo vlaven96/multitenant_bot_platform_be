@@ -9,6 +9,8 @@ from app.schemas.snapchat_account import SnapchatAccount
 from app.models.status_enum import StatusEnum
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload, joinedload
+
+from app.schemas.subscription import SubscriptionStatus
 from app.services.job_executor_service import JobExecutorService
 from datetime import datetime
 from celery import group, chord
@@ -35,10 +37,21 @@ class ExecutionTaskManager:
 
         execution = result.scalars().first()
         try:
-
+            subscription = execution.agency.subscription
+            if subscription.status == SubscriptionStatus.EXPIRED:
+                execution.status =  StatusEnum.PLATFORM_RATE_LIMIT_EXCEEDED
+                execution.end_time = datetime.utcnow()
+                db.commit()
+                execution_data = {
+                    "execution_id": execution_id,
+                    "final_status": execution.status.name,
+                    "end_time": execution.end_time.isoformat()
+                }
+                return execution_data
             if not execution:
                 logger.info(f"Execution {execution_id} not found!")
                 return {"message": f"Execution {execution_id} not found."}
+
 
             # Set execution status to IN_PROGRESS
             execution.status = StatusEnum.IN_PROGRESS

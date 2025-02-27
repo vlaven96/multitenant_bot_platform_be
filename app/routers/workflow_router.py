@@ -6,7 +6,7 @@ from app.dtos.workflow_dtos import WorkflowResponse, WorkflowCreateRequest, Work
     WorkflowUpdateRequest, WorkflowStatusUpdateRequest, WorkflowSimplifiedNameResponse
 from app.dtos.workflow_snapchat_account_response import WorkflowSnapchatAccountResponse
 from app.services.workflow_service import WorkflowsService
-from app.utils.security import get_admin_user, get_agency_id
+from app.utils.security import get_agency_id, check_subscription_available
 
 router = APIRouter(
     prefix="/workflows",
@@ -20,8 +20,8 @@ router = APIRouter(
 def create_workflow(
         workflow_create: WorkflowCreateRequest,
         db: Session = Depends(get_db),
-        current_user: dict = Depends(get_admin_user),
-        agency_id: int = Depends(get_agency_id)
+        agency_id: int = Depends(get_agency_id),
+        subscription = Depends(check_subscription_available),
 ):
     """
     Endpoint to create a new workflow.
@@ -33,7 +33,6 @@ def create_workflow(
 def read_workflows(
         name_filter: Optional[str] = Query(None, description="Filter workflows by name"),
         db: Session = Depends(get_db),
-        current_user: dict = Depends(get_admin_user),
         agency_id: int = Depends(get_agency_id)
 ):
     """
@@ -45,7 +44,6 @@ def read_workflows(
 @router.get("/simplified", response_model=List[WorkflowSimplifiedNameResponse])
 def read_workflows_simplified(
         db: Session = Depends(get_db),
-        current_user: dict = Depends(get_admin_user),
         agency_id: int = Depends(get_agency_id)
 ):
     """
@@ -58,7 +56,6 @@ def read_workflows_simplified(
 def read_workflow(
         workflow_id: int,
         db: Session = Depends(get_db),
-        current_user: dict = Depends(get_admin_user),
         agency_id: int = Depends(get_agency_id)
 ):
     """
@@ -72,8 +69,8 @@ def update_workflow(
         workflow_id: int,
         workflow_update: WorkflowUpdateRequest,
         db: Session = Depends(get_db),
-        current_user: dict = Depends(get_admin_user),
-        agency_id: int = Depends(get_agency_id)
+        agency_id: int = Depends(get_agency_id),
+        subscription = Depends(check_subscription_available),
 ):
     """
     Endpoint to update an existing workflow's details.
@@ -111,8 +108,8 @@ def update_workflow_status(
         workflow_id: int,
         status_update_request: WorkflowStatusUpdateRequest,
         db: Session = Depends(get_db),
-        current_user: dict = Depends(get_admin_user),
-        agency_id: int = Depends(get_agency_id)
+        agency_id: int = Depends(get_agency_id),
+        subscription = Depends(check_subscription_available),
 ):
     """
     Endpoint to update the status of a workflow.

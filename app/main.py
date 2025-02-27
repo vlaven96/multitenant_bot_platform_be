@@ -19,7 +19,7 @@ from app.routers import  validator_router
 from app.routers import statistic_router
 from app.routers import agency_router
 from app.services.job_scheduler_manager import SchedulerManager
-from app.utils.database_resource_creator import create_default_admin, import_airtable, associate_accounts_with_model, \
+from app.utils.database_resource_creator import create_default_admin, associate_accounts_with_model, \
     associate_accounts_with_chatbot
 from app.event_listeners import log_status_change
 from app.database import engine, Base
@@ -107,7 +107,7 @@ app.add_middleware(
 )
 
 # Create main_router with "/agency/{agency_id}" for multi-tenant routes
-main_router = APIRouter(prefix="/agency/{agency_id}")
+main_router = APIRouter(prefix="/agencies/{agency_id}")
 
 # Include multi-tenant routers inside `main_router`
 main_router.include_router(snapchat_account_router.router)
@@ -120,7 +120,7 @@ main_router.include_router(job_router.router)
 main_router.include_router(workflow_router.router)
 main_router.include_router(validator_router.router)
 main_router.include_router(statistic_router.router)
-
+main_router.include_router(admin_router.router)
 # Include the agency router separately (no agency_id prefix needed)
 app.include_router(agency_router.router)  # Global agency management
 

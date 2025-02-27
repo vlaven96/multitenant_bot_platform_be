@@ -1,20 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from typing import Optional, List
-
 from app.dtos.update_user_request import UpdateUserRequest
 from app.dtos.user_response import UserResponse
-from app.services.airtable_importer_service import AirtableImporterService
 from app.utils.controller_utils import str_to_bool
-from app.utils.security import get_admin_user
+from app.utils.security import get_admin_user, get_agency_id
 from sqlalchemy.orm import Session
 from app.database import engine
-from app.schemas.user import User
-
+from app.schemas.user import User, UserRole
 
 router = APIRouter(
     prefix="/admin",
     tags=["admin"]
 )
+
 
 @router.put("/activate-user/{user_id}")
 def activate_user(user_id: int, current_user: dict = Depends(get_admin_user)):
@@ -40,27 +38,19 @@ def activate_user(user_id: int, current_user: dict = Depends(get_admin_user)):
 
     return {"message": f"User {user.username} has been activated successfully"}
 
+
 @router.get("/users", response_model=List[UserResponse])
 def get_all_users(
-    current_user: dict = Depends(get_admin_user),
-    db: Session = Depends(lambda: Session(bind=engine)),
-    is_active: Optional[str] = Query(None, description="Filter by active status"),
-    username: Optional[str] = Query(None, description="Filter by username")
+        current_user: dict = Depends(get_admin_user),
+        db: Session = Depends(lambda: Session(bind=engine)),
+        username: Optional[str] = Query(None, description="Filter by username"),
+        agency_id: int = Depends(get_agency_id),
+
 ):
-    if not current_user["is_admin"]:
+    if current_user["role"] not in ("ADMIN", "GLOBAL_ADMIN"):
         raise HTTPException(status_code=403, detail="Only admins can access the user list.")
 
-    query = db.query(User)
-
-    # Convert the `is_active` query parameter to a boolean
-    try:
-        is_active_bool = str_to_bool(is_active)
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
-
-    # Apply filters
-    if is_active_bool is not None:
-        query = query.filter(User.is_active == is_active_bool)
+    query = db.query(User).filter(User.agency_id == agency_id)
 
     if username:
         sanitized_username = username.strip()
@@ -71,12 +61,13 @@ def get_all_users(
 
     return users
 
+
 @router.put("/users/{user_id}", response_model=UserResponse)
 def update_user(
-    user_id: int,
-    updates: UpdateUserRequest = Body(...),
-    current_user: dict = Depends(get_admin_user),
-    db: Session = Depends(lambda: Session(bind=engine)),
+        user_id: int,
+        updates: UpdateUserRequest = Body(...),
+        current_user: dict = Depends(get_admin_user),
+        db: Session = Depends(lambda: Session(bind=engine)),
 ):
     """
     Updates user attributes. Admins can modify any user attribute (e.g., activate a user, update email).
@@ -106,12 +97,14 @@ def update_user(
 
     return user
 
+
 @router.patch("/users/{user_id}", response_model=UserResponse)
 def patch_user(
-    user_id: int,
-    updates: UpdateUserRequest = Body(...),
-    current_user: dict = Depends(get_admin_user),
-    db: Session = Depends(lambda: Session(bind=engine)),
+        user_id: int,
+        updates: UpdateUserRequest = Body(...),
+        current_user: dict = Depends(get_admin_user),
+        db: Session = Depends(lambda: Session(bind=engine)),
+        agency_id: int = Depends(get_agency_id),
 ):
     """
     Partially updates a user's attributes.
@@ -141,24 +134,31 @@ def patch_user(
 
     return user
 
-airtable_importer = AirtableImporterService()
 
-@router.post("/import-airtable")
-def import_airtable_data(current_user: dict = Depends(get_admin_user)):
-        """
-        Triggers the import of data from Airtable.
+@router.delete("/users/{user_id}", response_model=dict)
+def delete_user(
+        user_id: int,
+        db: Session = Depends(lambda: Session(bind=engine)),
+        current_user: dict = Depends(get_admin_user),
+        agency_id: int = Depends(get_agency_id),
 
-        :param current_user: The currently authenticated admin user.
-        :return: A response indicating the status of the import and the number of records retrieved.
-        """
-        if not current_user["is_admin"]:
-            raise HTTPException(status_code=403, detail="Only admins can import Airtable data.")
+):
+    """
+    Deletes a user account. Only accessible to admins.
+    """
+    # Ensure the current user is an admin
+    if current_user["role"] not in ("ADMIN", "GLOBAL_ADMIN"):
+        raise HTTPException(status_code=403, detail="Only admins can delete user accounts.")
 
-        try:
-            records = airtable_importer.import_objects()
-            return {
-                "message": f"Successfully imported {len(records)} records from Airtable.",
-                "data": records
-            }
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to import data from Airtable: {str(e)}")
+    # Retrieve the user by ID
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        db.close()
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Delete the user and commit the transaction
+    db.delete(user)
+    db.commit()
+    db.close()
+
+    return {"message": f"User {user.username} has been deleted successfully"}

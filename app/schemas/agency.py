@@ -19,3 +19,4 @@ class Agency(Base):
     jobs = relationship("Job", back_populates="agency", cascade="all, delete")
     workflows = relationship("Workflow", back_populates="agency", cascade="all, delete")
     models = relationship("Model", back_populates="agency", cascade="all, delete")
+    subscription = relationship("Subscription", back_populates="agency", uselist=False, cascade="all, delete")

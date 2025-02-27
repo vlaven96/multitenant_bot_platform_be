@@ -11,7 +11,7 @@ from app.models.status_enum import StatusEnum
 from app.schemas.executions.execution import Execution
 from app.database import get_db
 from app.services.job_executor_service import JobExecutorService
-from app.utils.security import get_current_user, get_agency_id
+from app.utils.security import get_current_user, get_agency_id, check_subscription_available
 from fastapi import Query
 
 router = APIRouter(
@@ -25,6 +25,7 @@ def create_execution(execution: ExecutionCreateRequest,
                      db: Session = Depends(get_db),
                      current_user: dict = Depends(get_current_user),
                      agency_id: int = Depends(get_agency_id),
+                     subscription = Depends(check_subscription_available),
                      background_tasks: BackgroundTasks = BackgroundTasks()
                      ):
     """

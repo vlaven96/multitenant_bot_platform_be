@@ -13,6 +13,7 @@ from app.schemas.executions.execution import Execution
 from app.schemas.executions.job import Job
 from app.event_listeners import log_status_change
 from app.services.snapchat_account_statistics_service import SnapchatAccountStatisticsService
+from app.services.subscription_service import SubscriptionService
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +38,15 @@ class JobTaskManager:
         try:
             # Retrieve the Job
             job = db.query(Job).filter(Job.id == job_id, Job.status == JobStatusEnum.ACTIVE).first()
+
             if not job:
                 logger.warning(f"Job ID {job_id} not found or is not active.")
                 return {"detail": "Job not found or is not active."}
 
+            if not SubscriptionService.is_subscription_available(db, job.agency_id):
+                message = f"Job {job.name} was not executed because subscription is expired."
+                logger.info(message)
+                return {"detail": message}
                 # Create a new Execution record
             execution = Execution(
                 type=job.type,  # Assuming Execution.type corresponds to Job.type

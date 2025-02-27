@@ -12,7 +12,8 @@ from app.models.account_status_enum import AccountStatusEnum
 from app.database import get_db
 from app.services.snapchat_account_service import SnapchatAccountService
 from app.services.snapchat_account_statistics_service import SnapchatAccountStatisticsService
-from app.utils.security import get_current_user, authenticate_user_or_api_key, get_agency_id
+from app.utils.security import get_current_user, authenticate_user_or_api_key, get_agency_id, \
+    check_subscription_available
 
 router = APIRouter(
     prefix="/accounts",
@@ -82,8 +83,8 @@ def get_accounts_for_termination(
             db=db,
             agency_id=agency_id
         )
-        if not accounts:
-            raise HTTPException(status_code=404, detail="No accounts found for termination.")
+        # if not accounts:
+        #     raise HTTPException(status_code=404, detail="No accounts found for termination.")
         return accounts
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
@@ -204,6 +205,7 @@ def create_accounts(
     db: Session = Depends(get_db),
     auth: str = Depends(authenticate_user_or_api_key),
     agency_id: int = Depends(get_agency_id),
+    subscription = Depends(check_subscription_available),
     x_api_key: Optional[str] = Header(None),
 ):
     """
@@ -296,7 +298,7 @@ def get_account_edit_data(
     Retrieves all necessary data for the edit page of a Snapchat account.
     """
     try:
-        edit_data = SnapchatAccountService.get_account_edit_data(db, account_id)
+        edit_data = SnapchatAccountService.get_account_edit_data(db, agency_id, account_id)
         return edit_data
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

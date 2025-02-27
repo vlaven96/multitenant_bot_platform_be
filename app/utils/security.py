@@ -5,9 +5,11 @@ from fastapi import Depends, HTTPException, Header, Path
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from typing import Optional
+from datetime import datetime
 
 from app.database import get_db
 from app.schemas import User
+from app.schemas.subscription import Subscription, SubscriptionStatus
 from app.utils.jwt_handler import verify_token
 from app.services.api_key_service import APIKeyService
 
@@ -59,7 +61,7 @@ def get_agency_id(
     Ensures the user is part of the given agency.
     Allows GLOBAL_ADMIN to access all agencies.
     """
-    user = db.query(User).filter(User.id == current_user["id"]).first()
+    user = db.query(User).filter(User.username == current_user["sub"]).first()
 
     if not user:
         raise HTTPException(status_code=403, detail="Unauthorized access.")
@@ -105,3 +107,28 @@ def authenticate_user_or_api_key(
 
     # ❌ No valid authentication method provided
     raise HTTPException(status_code=401, detail="Authentication required: provide either API key or Bearer token")
+
+
+def check_subscription_available(
+        agency_id: int = Depends(get_agency_id),
+        db: Session = Depends(get_db)
+):
+    """
+    Ensures the agency's subscription is still available.
+    - Checks if the subscription exists.
+    - Verifies that its status is AVAILABLE.
+    - Verifies that the current time is before the subscription's turned_off_at time.
+    """
+    subscription = db.query(Subscription).filter(Subscription.agency_id == agency_id).first()
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found.")
+
+    # Check that the subscription status is AVAILABLE
+    if subscription.status != SubscriptionStatus.AVAILABLE:
+        raise HTTPException(status_code=402, detail="Subscription is not available.")
+
+    # Check if the subscription has expired based on its turned_off_at value.
+    if subscription.turned_off_at and subscription.turned_off_at < datetime.utcnow():
+        raise HTTPException(status_code=402, detail="Subscription has expired.")
+
+    return subscription
