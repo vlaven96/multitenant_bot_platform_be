@@ -48,6 +48,8 @@ origins = [
     "http://localhost:4173",
     "http://138.201.226.205:5177",  # prod
     "https://138.201.226.205:5177",  # prod
+    "http://138.201.226.205:5178",  # prod
+    "https://138.201.226.205:5178",  # prod
     "https://your-production-url.com",  # Replace with your production frontend URL
 ]
 
