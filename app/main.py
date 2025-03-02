@@ -18,9 +18,10 @@ from app.routers import workflow_router
 from app.routers import  validator_router
 from app.routers import statistic_router
 from app.routers import agency_router
+from app.routers import subscription_router
 from app.services.job_scheduler_manager import SchedulerManager
 from app.utils.database_resource_creator import create_default_admin, associate_accounts_with_model, \
-    associate_accounts_with_chatbot
+    associate_accounts_with_chatbot, create_global_admin
 from app.event_listeners import log_status_change
 from app.database import engine, Base
 from fastapi.middleware.cors import CORSMiddleware
@@ -121,6 +122,7 @@ main_router.include_router(workflow_router.router)
 main_router.include_router(validator_router.router)
 main_router.include_router(statistic_router.router)
 main_router.include_router(admin_router.router)
+main_router.include_router(subscription_router.router)
 # Include the agency router separately (no agency_id prefix needed)
 app.include_router(agency_router.router)  # Global agency management
 
@@ -133,6 +135,7 @@ app.include_router(admin_router.router)
 app.include_router(api_keys_router.router)
 app.include_router(cookie_router.router)
 
+create_global_admin()
 @app.get("/")
 def read_root():
     return {"message": "FastAPI Authentication System"}

@@ -13,6 +13,7 @@ from app.models.execution_type_enum import ExecutionTypeEnum
 from app.models.job_status_enum import JobStatusEnum
 from app.schemas import SnapchatAccount
 from app.schemas.executions.job import Job
+from app.services.job_executor_service import JobExecutorService
 from app.services.job_scheduler_manager import SchedulerManager
 import logging
 
@@ -34,13 +35,15 @@ class JobsService:
 
         # Create a new Job instance
         try:
+            configuration = job_create.configuration
+            JobExecutorService.provide_default_config2(job_create.type, configuration)
             db_job = Job(
                 name=job_create.name,
                 statuses=job_create.statuses,
                 tags=job_create.tags,
                 type=job_create.type,
                 cron_expression=job_create.cron_expression,
-                configuration=job_create.configuration,
+                configuration=configuration,
                 status=job_create.status or JobStatusEnum.ACTIVE,  # Default to ACTIVE if not provided
                 start_date=job_create.first_execution_time,
                 sources=job_create.sources,

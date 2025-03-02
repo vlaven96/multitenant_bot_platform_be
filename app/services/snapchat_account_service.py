@@ -17,7 +17,7 @@ from app.models.account_status_enum import AccountStatusEnum
 from app.models.execution_type_enum import ExecutionTypeEnum
 from app.models.status_enum import StatusEnum
 from app.models.workflow_step_type_enum import WorkflowStepTypeEnum
-from app.schemas import SnapchatAccountStats
+from app.schemas import SnapchatAccountStats, Agency
 from app.schemas.chatbot import ChatBot
 from app.schemas.cookies import Cookies
 from app.schemas.executions.account_execution import AccountExecution
@@ -288,38 +288,58 @@ class SnapchatAccountService:
         if not proxies:
             raise ValueError("No proxies available in the system.")
 
-        models = (
-            db.query(Model, func.count(SnapchatAccount.id).label("account_count"))
-                .outerjoin(SnapchatAccount, Model.id == SnapchatAccount.model_id)
-                .filter(Model.agency_id == agency_id)
-                .group_by(Model.id)
-                .order_by(func.count(SnapchatAccount.id).asc())  # Sort by least usage
-                .all()
-        )
-        if not models:
-            raise ValueError("No models available in the system.")
-
-        chatbots = (
-            db.query(ChatBot, func.count(SnapchatAccount.id).label("account_count"))
-                .outerjoin(SnapchatAccount, ChatBot.id == SnapchatAccount.chatbot_id)
-                .filter(ChatBot.agency_id == agency_id)
-                .group_by(ChatBot.id)
-                .order_by(func.count(SnapchatAccount.id).asc())  # Sort by least usage
-                .all()
-        )
-        if not chatbots:
-            raise ValueError("No Chatbots available in the system.")
+        # models = (
+        #     db.query(Model, func.count(SnapchatAccount.id).label("account_count"))
+        #         .outerjoin(SnapchatAccount, Model.id == SnapchatAccount.model_id)
+        #         .filter(Model.agency_id == agency_id)
+        #         .group_by(Model.id)
+        #         .order_by(func.count(SnapchatAccount.id).asc())  # Sort by least usage
+        #         .all()
+        # )
+        # if not models:
+        #     raise ValueError("No models available in the system.")
+        #
+        # chatbots = (
+        #     db.query(ChatBot, func.count(SnapchatAccount.id).label("account_count"))
+        #         .outerjoin(SnapchatAccount, ChatBot.id == SnapchatAccount.chatbot_id)
+        #         .filter(ChatBot.agency_id == agency_id)
+        #         .group_by(ChatBot.id)
+        #         .order_by(func.count(SnapchatAccount.id).asc())  # Sort by least usage
+        #         .all()
+        # )
+        # if not chatbots:
+        #     raise ValueError("No Chatbots available in the system.")
 
         # Initialize usage tracking
         proxy_usage = {proxy.id: count for proxy, count in proxies}
-        model_usage = {model.id: count for model, count in models}
-        chatbot_usage = {chatbot.id: count for chatbot, count in chatbots}
+        # model_usage = {model.id: count for model, count in models}
+        # chatbot_usage = {chatbot.id: count for chatbot, count in chatbots}
 
         proxy_pool = list(proxy_usage.keys())  # List of proxy IDs
-        model_pool = list(model_usage.keys())
-        chatbot_pool = list(chatbot_usage.keys())
+        # model_pool = list(model_usage.keys())
+        # chatbot_pool = list(chatbot_usage.keys())
+        lines = data.splitlines()
+        agency = db.query(Agency).filter(Agency.id == agency_id).first()
 
-        for index, line in enumerate(data.splitlines()):
+        existing_count = (
+            db.query(func.count(SnapchatAccount.id))
+            .filter(
+                SnapchatAccount.agency_id == agency_id,
+                SnapchatAccount.status.in_((AccountStatusEnum.GOOD_STANDING, AccountStatusEnum.RECENTLY_INGESTED))
+            )
+            .scalar()
+        )
+
+        # Calculate allowed accounts, ensuring it doesn't go negative
+        allowed_accounts = max(agency.subscription.number_of_sloths - existing_count, 0)
+
+        # Check if adding the new accounts exceeds the subscription limit
+        if len(lines) > allowed_accounts:
+            raise ValueError(
+                f"Your subscription includes {agency.subscription.number_of_sloths} sloths, and you can add only {allowed_accounts} more accounts."
+            )
+
+        for index, line in enumerate(lines):
             try:
                 fields = {}
                 if pattern:
@@ -352,8 +372,8 @@ class SnapchatAccountService:
                         assigned_proxy_id = proxy_pool[0]
                 else:
                     assigned_proxy_id = proxy_pool[0]
-                assigned_model_id = model_id or model_pool[0]
-                assigned_chatbot_id = chatbot_id or chatbot_pool[0]
+                # assigned_model_id = model_id or model_pool[0]
+                # assigned_chatbot_id = chatbot_id or chatbot_pool[0]
 
                 # Create SnapchatAccount object
                 account = SnapchatAccount(
@@ -363,8 +383,8 @@ class SnapchatAccountService:
                     two_fa_secret=two_fa_secret,
                     creation_date=creation_date,
                     proxy_id=assigned_proxy_id,
-                    model_id=assigned_model_id,
-                    chatbot_id=assigned_chatbot_id,
+                    # model_id=assigned_model_id,
+                    # chatbot_id=assigned_chatbot_id,
                     workflow_id=workflow_id,
                     account_source=account_source or 'EXTERNAL',
                     email=email,
@@ -376,13 +396,13 @@ class SnapchatAccountService:
 
                 # Update usage tracking
                 proxy_usage[assigned_proxy_id] += 1
-                model_usage[assigned_model_id] += 1
-                chatbot_usage[assigned_chatbot_id] += 1
+                # model_usage[assigned_model_id] += 1
+                # chatbot_usage[assigned_chatbot_id] += 1
 
                 # Re-sort pools
                 proxy_pool = sorted(proxy_pool, key=lambda proxy_id: proxy_usage[proxy_id])
-                model_pool = sorted(model_pool, key=lambda model_id: model_usage[model_id])
-                chatbot_pool = sorted(chatbot_pool, key=lambda chatbot_id: chatbot_usage[chatbot_id])
+                # model_pool = sorted(model_pool, key=lambda model_id: model_usage[model_id])
+                # chatbot_pool = sorted(chatbot_pool, key=lambda chatbot_id: chatbot_usage[chatbot_id])
             except IntegrityError as e:
                 db.rollback()
                 errors.append(

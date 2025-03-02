@@ -4,7 +4,7 @@ from app.database import get_db
 from app.dtos.agency_dtos import AgencyCreate, AgencyResponse
 from app.dtos.user_invite_request import UserInviteRequest
 from app.services.agency_service import AgencyService
-from app.utils.security import hash_password, get_agency_id, get_admin_user
+from app.utils.security import hash_password, get_agency_id, get_admin_user, get_global_admin
 
 router = APIRouter(
     prefix="/agencies",  # Keeps original prefix
@@ -13,7 +13,7 @@ router = APIRouter(
 
 
 @router.get("/", response_model=list[AgencyResponse])
-def get_all_agencies(db: Session = Depends(get_db), agency_id: int = Depends(get_agency_id)):
+def get_all_agencies(db: Session = Depends(get_db), global_admin = Depends(get_global_admin)):
     """
     Retrieves all agencies.
     """

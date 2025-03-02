@@ -10,6 +10,7 @@ from datetime import datetime
 from app.database import get_db
 from app.schemas import User
 from app.schemas.subscription import Subscription, SubscriptionStatus
+from app.schemas.user import UserRole
 from app.utils.jwt_handler import verify_token
 from app.services.api_key_service import APIKeyService
 
@@ -50,6 +51,10 @@ def get_admin_user(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Only admins can perform this action.")
     return current_user
 
+def get_global_admin(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") not in ["GLOBAL_ADMIN"]:
+        raise HTTPException(status_code=403, detail="Only admins can perform this action.")
+    return current_user
 
 # 🔒 Ensure user is from the requested agency
 def get_agency_id(
@@ -67,7 +72,7 @@ def get_agency_id(
         raise HTTPException(status_code=403, detail="Unauthorized access.")
 
     # ✅ Allow GLOBAL_ADMIN to access any agency
-    if user.role == "GLOBAL_ADMIN":
+    if user.role == UserRole.GLOBAL_ADMIN:
         return agency_id
 
     # ❌ Block regular users/admins from accessing other agencies
@@ -129,6 +134,9 @@ def check_subscription_available(
 
     # Check if the subscription has expired based on its turned_off_at value.
     if subscription.turned_off_at and subscription.turned_off_at < datetime.utcnow():
+        if subscription.status != SubscriptionStatus.EXPIRED:
+            subscription.status = SubscriptionStatus.EXPIRED
+            db.commit()
         raise HTTPException(status_code=402, detail="Subscription has expired.")
 
     return subscription

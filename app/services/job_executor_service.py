@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Any, Dict
 from sqlalchemy.orm import aliased
 from sqlalchemy import select, func
 from app.dtos.execution_create_request import ExecutionCreateRequest
@@ -32,6 +32,37 @@ class JobExecutorService:
     REQUIRED_GENERATED_LEADS_CONFIG_KEYS = {"accounts_number", "target_lead_number", "weight_rejecting_rate", "weight_conversation_rate", "weight_conversion_rate"}
     REQUIRED_CONSUME_LEADS_CONFIG_KEYS = {"requests", "batches", "batch_delay",
                                        "argo_tokens", "users_sent_in_request"}
+
+    @staticmethod
+    def provide_default_config2(type, configuration: Dict[str, Any]):
+
+        # Set starting_delay for all types by default
+        configuration['starting_delay'] = 300
+
+        if type == ExecutionTypeEnum.QUICK_ADDS:
+            configuration['max_quick_add_pages'] = 10
+            configuration['users_sent_in_request'] = 10
+            configuration['argo_tokens'] = False
+            configuration['batches'] = 1
+            configuration['batch_delay'] = 10
+
+    @staticmethod
+    def provide_default_config(execution_request: ExecutionCreateRequest):
+        # Calculate the number of accounts using the length of the list if it exists
+        accounts_num = len(execution_request.accounts) if execution_request.accounts else 1
+        delay_seconds = (accounts_num - 1) * 3
+
+        # Set starting_delay for all types by default
+        execution_request.configuration['starting_delay'] = delay_seconds
+
+        if ExecutionTypeEnum(execution_request.type) == ExecutionTypeEnum.QUICK_ADDS:
+            execution_request.configuration['max_quick_add_pages'] = 10
+            execution_request.configuration['users_sent_in_request'] = 10
+            execution_request.configuration['argo_tokens'] = False
+            execution_request.configuration['batches'] = 1
+            execution_request.configuration['batch_delay'] = 10
+
+
     @staticmethod
     def validate_executor(execution_request: ExecutionCreateRequest):
         """

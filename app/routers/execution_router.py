@@ -35,7 +35,7 @@ def create_execution(execution: ExecutionCreateRequest,
     if not username:
         raise HTTPException(status_code=400, detail="User information is incomplete")
     JobExecutorService.validate_executor(execution)
-
+    JobExecutorService.provide_default_config(execution)
     new_execution = Execution(
         type=execution.type,
         triggered_by=username,

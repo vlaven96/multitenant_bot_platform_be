@@ -12,7 +12,7 @@ class Job(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     agency_id = Column(Integer, ForeignKey("agencies.id"), nullable=False)
-    name = Column(String, unique=True, nullable=False)
+    name = Column(String, unique=False, nullable=False)
     statuses = Column(ARRAY(Enum(AccountStatusEnum, name="account_status_enum")), nullable=True)
     tags = Column(ARRAY(String), nullable=True)
     sources = Column(ARRAY(String), nullable=True)

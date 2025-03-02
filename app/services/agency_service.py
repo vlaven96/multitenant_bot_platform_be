@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.celery_tasks import EmailTaskManager
 from app.config import settings, email_settings
@@ -15,7 +15,7 @@ class AgencyService:
 
     @staticmethod
     def get_all_agencies(db: Session):
-        return db.query(Agency).all()
+        return db.query(Agency).options(joinedload(Agency.subscription)).all()
 
     @staticmethod
     def get_agency_by_id(db: Session, agency_id: int):

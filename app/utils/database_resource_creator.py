@@ -4,11 +4,27 @@ from app.models.chat_bot_type_enum import ChatBotTypeEnum
 from app.schemas.chatbot import ChatBot
 from app.schemas.model import Model
 from app.schemas.snapchat_account import SnapchatAccount
-from app.schemas.user import User
+from app.schemas.user import User, UserRole
 from sqlalchemy.future import select
 
 from app.utils.security import hash_password
 
+def create_global_admin():
+    session = Session(bind=engine)
+    global_admin = session.query(User).filter_by(role=UserRole.GLOBAL_ADMIN).first()
+    if global_admin:
+        print("Admin user already exists. Skipping creation.")
+        session.close()
+        return
+    global_admin = User(
+        username="global_admin",
+        email="global_admin@gmail.com",
+        password=hash_password("globaladminpassword"),
+        role=UserRole.GLOBAL_ADMIN
+    )
+    session.add(global_admin)
+    session.commit()
+    session.close()
 
 def create_default_admin():
     session = Session(bind=engine)
