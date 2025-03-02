@@ -4,25 +4,25 @@ from sqlalchemy import create_engine, MetaData
 import os
 # Testing Paths
 # # Database URLs
-POSTGRES_USER = "postgres"
-POSTGRES_HOST = "localhost"
-POSTGRES_PORT = "5433"
-POSTGRES_DB = "multitenant_chatbot_db"
-SYNC_DATABASE_URL = f"postgresql+psycopg2://{POSTGRES_USER}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
-ASYNC_DATABASE_URL = f"postgresql+asyncpg://{POSTGRES_USER}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+# POSTGRES_USER = "postgres"
+# POSTGRES_HOST = "localhost"
+# POSTGRES_PORT = "5433"
+# POSTGRES_DB = "multitenant_chatbot_db"
+# SYNC_DATABASE_URL = f"postgresql+psycopg2://{POSTGRES_USER}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+# ASYNC_DATABASE_URL = f"postgresql+asyncpg://{POSTGRES_USER}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 # NEO_DATABASE_URL = "postgresql://neondb_owner:qLYxB2EwWTi1@ep-autumn-darkness-a55ku0kh.us-east-2.aws.neon.tech/neondb?sslmode=require"
 # Production configuration
-# POSTGRES_USER = "postgres"
-# POSTGRES_PASSWORD = "secret"  # Replace with the actual password
-# POSTGRES_HOST = "138.201.226.205"
-# POSTGRES_PORT = "5434"
-# POSTGRES_DB = "dpa_bot_prod"
-#
-# # Synchronous database URL
-# SYNC_DATABASE_URL = (f"postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}")
-#
-# # Asynchronous database URL
-# ASYNC_DATABASE_URL = (f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}")
+POSTGRES_USER = "postgres"
+POSTGRES_PASSWORD = "secret"  # Replace with the actual password
+POSTGRES_HOST = "138.201.226.205"
+POSTGRES_PORT = "5434"
+POSTGRES_DB = "dpa_bot_prod_multitenant"
+
+# Synchronous database URL
+SYNC_DATABASE_URL = (f"postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}")
+
+# Asynchronous database URL
+ASYNC_DATABASE_URL = (f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}")
 
 
 # neo_engine = create_engine(
