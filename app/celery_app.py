@@ -23,9 +23,9 @@ if not os.getenv("SNAPKAT_API_KEY"):
 # - broker: e.g., Redis or RabbitMQ URL
 # - backend: for storing task results (optional but recommended)
 celery = Celery(
-    "dpa_bot_celery",
-    broker="redis://localhost:6379/0",   # or "amqp://localhost" for RabbitMQ
-    backend="redis://localhost:6379/0",
+    "dpa_bot_celery_mt",
+    broker="redis://localhost:6379/1",   # or "amqp://localhost" for RabbitMQ
+    backend="redis://localhost:6379/1",
 )
 celery.conf.timezone = "UTC"
 # Optional: Load config from a configuration object or file

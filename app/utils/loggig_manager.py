@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 class LoggingManager:
     _instance = None
 
-    def __init__(self, redis_url="redis://localhost:6379/0"):
+    def __init__(self, redis_url="redis://localhost:6379/1"):
         if LoggingManager._instance is not None:
             raise Exception("This class is a singleton! Use `LoggingManager.get_instance()` to access it.")
 
