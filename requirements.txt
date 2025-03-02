@@ -144,9 +144,6 @@ py4j==0.10.9.7
 pyasn1==0.6.1
 pycobertura==0.2.1
 pycparser==2.21
-pycrypto==2.6.1
-pycryptodome==3.21.0
-pycryptodomex==3.21.0
 pydantic==2.10.3
 pydantic-extra-types==2.10.1
 pydantic-settings==2.6.1
