@@ -591,14 +591,14 @@ class SnapchatAccountService:
         """
         Service to retrieve all unique statuses from the SnapchatAccount table.
         """
-        # # Query distinct statuses
-        # statuses = db.execute(
-        #     select(distinct(SnapchatAccount.status))
-        # ).scalars().all()
-        #
-        # # Convert Enum values to string if necessary
-        # return [status.name for status in statuses]
-        return [status.value for status in AccountStatusEnum]
+        excluded_statuses = {
+            AccountStatusEnum.CAPTCHA.value,
+            AccountStatusEnum.CHATBOT_LOCKED.value,
+            AccountStatusEnum.COMPROMISED_LOCKED.value,
+            AccountStatusEnum.TEMPORARY_LOCKED.value
+        }
+
+        return [status.value for status in AccountStatusEnum if status.value not in excluded_statuses]
 
     @staticmethod
     def get_snapchat_account_sources(db: Session, agency_id: int) -> list[str]:

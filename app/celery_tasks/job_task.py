@@ -53,7 +53,8 @@ class JobTaskManager:
                 triggered_by=job.name,
                 configuration=job.configuration,
                 status=StatusEnum.IN_PROGRESS,  # Assuming StatusEnum has IN_PROGRESS
-                job_id=job_id
+                job_id=job_id,
+                agency_id=job.agency_id
             )
             db.add(execution)
             db.commit()

@@ -20,6 +20,7 @@ from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.orm import Session
 
 from app.utils.error_message_status_dict import STATUS_MAPPING_ACCOUNTS, STATUS_MAPPING_EXECUTIONS
+from app.utils.user_frinedly_message_utils import UserFriendlyMessageUtils
 
 
 class JobExecutorService:
@@ -471,6 +472,11 @@ class JobExecutorService:
         )
         if not execution:
             raise ValueError(f"Execution with ID {execution_id} does not exist.")
+
+        for account_execution in execution.account_executions:
+            if(account_execution.status == StatusEnum.SNAPKAT_API_RATE_LIMIT_EXCEEDED):
+                account_execution.status = StatusEnum.FAILURE
+            account_execution.message = UserFriendlyMessageUtils.get_user_friendly_message(account_execution.message)
 
         return execution
 

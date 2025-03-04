@@ -87,8 +87,13 @@ class AgencyService:
     def invite_user_to_agency(db: Session, agency_id: int, email: str):
         # Retrieve the agency using the provided agency_id
         agency = db.query(Agency).filter(Agency.id == agency_id).first()
+
         if not agency:
             raise ValueError("Agency not found.")
+
+        email_exists = db.query(User).filter(User.email == email).first()
+        if email_exists:
+            raise ValueError("Email is already associated with an agency.")
 
         # Generate an invitation token, assuming the invited user is a regular user.
         token = AgencyService.generate_invite_token(agency, email, "USER")

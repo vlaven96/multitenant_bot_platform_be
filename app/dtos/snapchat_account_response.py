@@ -25,11 +25,13 @@ class SnapchatAccountResponse(BaseModel):
     device: Optional[DeviceResponse]
     cookies: Optional[CookiesResponse]
     account_executions: Optional[List[AccountExecutionSimpleResponse]] = None
-    model: ModelResponse
-    chat_bot: ChatBotResponse
+    model: Optional[ModelResponse]
+    chat_bot: Optional[ChatBotResponse]
     tags: Optional[List[str]]
     account_source: str
     workflow: Optional[WorkflowSimplifiedNameResponse]
+    email: Optional[str]
+    email_password: Optional[str]
 
     class Config:
         orm_mode = True
@@ -52,6 +54,8 @@ class SnapchatAccountResponseV2(BaseModel):
     tags: Optional[List[str]]
     account_source: str
     workflow: Optional[WorkflowSimplifiedNameResponse]
+    email: Optional[str]
+    email_password: Optional[str]
 
     class Config:
         orm_mode = True
