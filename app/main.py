@@ -52,6 +52,8 @@ origins = [
     "https://138.201.226.205:5178",  # prod
     "https://snepflow.com",
     "http://snepflow.com",
+    "http://api.snepflow.com",
+    "https://api.snepflow.com",
 ]
 
 
