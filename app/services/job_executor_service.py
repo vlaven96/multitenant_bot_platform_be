@@ -476,7 +476,8 @@ class JobExecutorService:
         for account_execution in execution.account_executions:
             if(account_execution.status == StatusEnum.SNAPKAT_API_RATE_LIMIT_EXCEEDED):
                 account_execution.status = StatusEnum.FAILURE
-            account_execution.message = UserFriendlyMessageUtils.get_user_friendly_message(account_execution.message)
+            if account_execution.message:
+                account_execution.message = UserFriendlyMessageUtils.get_user_friendly_message(account_execution.message)
 
         return execution
 

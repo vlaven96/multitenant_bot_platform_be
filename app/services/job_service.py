@@ -289,10 +289,14 @@ class JobsService:
         Retrieves all Snapchat accounts that match the given job's statuses, tags, and sources.
         """
         # Retrieve the job from the database
-        job = db.query(Job).filter(Job.id == job_id, Job.status == JobStatusEnum.ACTIVE).first()
+        job = db.query(Job).filter(Job.id == job_id).first()
         if not job:
             logger.warning(f"Job ID {job_id} not found or is not active.")
-            return {"detail": "Job not found or is not active."}
+            return {"detail": "Job not found."}
+
+        if job.status == JobStatusEnum.STOPPED:
+            logger.warning(f"Job ID {job_id} not found or is not active.")
+            return {"detail": "Job is inactive, no accounts associated."}
 
         logger.info(f"Checking type for {job.name}")
         account_ids = None

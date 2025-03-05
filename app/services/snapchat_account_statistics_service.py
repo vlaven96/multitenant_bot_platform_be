@@ -223,10 +223,11 @@ class SnapchatAccountStatisticsService:
             )
 
             cupid_stats = None
-            if snapchat_account.chat_bot.type == ChatBotTypeEnum.CUPID_BOT:
-                cupid_stats = SnapchatAccountStatisticsService._get_stats_from_cupidbot(
-                    snapchat_account.chat_bot.token, snap_account_id
-                )
+            if snapchat_account.chat_bot:
+                if snapchat_account.chat_bot.type == ChatBotTypeEnum.CUPID_BOT:
+                    cupid_stats = SnapchatAccountStatisticsService._get_stats_from_cupidbot(
+                        snapchat_account.chat_bot.token, snap_account_id
+                    )
 
             if cupid_stats:
                 merged_stats.update({
