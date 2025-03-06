@@ -31,7 +31,8 @@ from app.utils.snapchat_account_utils import SnapchatAccountUtils
 from sqlalchemy.orm import joinedload
 from sqlalchemy import select, distinct, exists, and_
 import re
-
+import logging
+logger = logging.getLogger(__name__)
 class SnapchatAccountService:
     @staticmethod
     def get_all_accounts(
@@ -494,6 +495,7 @@ class SnapchatAccountService:
     @staticmethod
     def create_and_attach_cookies(db: Session, username: str, data: dict):
         # Lookup the account based on the username
+        logger.info(f"Updating cookies for account {username}, new cookies: {data}")
         account = db.query(SnapchatAccount).filter(SnapchatAccount.username == username).first()
         if not account:
             return None  # If account is not found, return None
@@ -503,6 +505,7 @@ class SnapchatAccountService:
             account.cookies.data = data
             db.commit()
             db.refresh(account.cookies)
+            logger.info(f"Cookies were updated for account {username}")
         else:
             # Create new cookies and associate it with the account
             new_cookie = Cookies(
@@ -514,6 +517,7 @@ class SnapchatAccountService:
             db.refresh(new_cookie)  # Refresh the instance to get the updated data
             account.cookies = new_cookie  # This associates the cookie with the account
             db.commit()  # Commit the changes
+            logger.info(f"New cookies were created for account {username}")
 
         # Return the updated account (including the new/updated cookie)
         return account

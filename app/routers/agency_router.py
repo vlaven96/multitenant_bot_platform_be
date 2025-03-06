@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.dtos.agency_dtos import AgencyCreate, AgencyResponse
+from app.dtos.agency_dtos import AgencyCreate, AgencyResponse, AgencyCreateRequest
 from app.dtos.user_invite_request import UserInviteRequest
 from app.services.agency_service import AgencyService
 from app.utils.security import hash_password, get_agency_id, get_admin_user, get_global_admin
@@ -13,15 +13,29 @@ router = APIRouter(
 
 
 @router.get("/", response_model=list[AgencyResponse])
-def get_all_agencies(db: Session = Depends(get_db), global_admin = Depends(get_global_admin)):
+def get_all_agencies(db: Session = Depends(get_db), global_admin=Depends(get_global_admin)):
     """
     Retrieves all agencies.
     """
     return AgencyService.get_all_agencies(db)
 
 
+# @router.post("/", response_model=AgencyResponse)
+# def create_agency(agency_data: AgencyCreate,
+#                   background_tasks: BackgroundTasks,
+#                   db: Session = Depends(get_db)):
+#     """
+#     Creates a new agency with an auto-generated admin account.
+#     """
+#     try:
+#         # All invitation logic is encapsulated in the static method
+#         agency = AgencyService.create_agency_with_invitation(db, agency_data, background_tasks)
+#         return agency
+#     except ValueError as e:
+#         raise HTTPException(status_code=400, detail=str(e))
+
 @router.post("/", response_model=AgencyResponse)
-def create_agency(agency_data: AgencyCreate,
+def create_agency(agency_data: AgencyCreateRequest,
                   background_tasks: BackgroundTasks,
                   db: Session = Depends(get_db)):
     """
@@ -29,11 +43,19 @@ def create_agency(agency_data: AgencyCreate,
     """
     try:
         # All invitation logic is encapsulated in the static method
-        agency = AgencyService.create_agency_with_invitation(db, agency_data, background_tasks)
+        agency = AgencyService.create_agency(db, agency_data)
         return agency
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.post("/invite_agency", response_model=dict)
+def invite_agency(
+        invite_request: UserInviteRequest,
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(get_global_admin),
+):
+    AgencyService.invite_user_to_create_agency(db, invite_request.email)
+    return {"detail": "Invitation to create agency sent successfully."}
 
 @router.get("/{agency_id}", response_model=AgencyResponse)
 def get_agency(db: Session = Depends(get_db), agency_id: int = Depends(get_agency_id),
@@ -64,3 +86,5 @@ def invite_user_to_agency(
         return {"detail": "Invitation sent successfully."}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+

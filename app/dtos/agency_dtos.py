@@ -20,3 +20,9 @@ class AgencyResponse(BaseModel):
     subscription: Optional[SubscriptionResponse] = None
     class Config:
         orm_mode = True
+
+class AgencyCreateRequest(BaseModel):
+    agency_name: str
+    username: str
+    password: str
+    token: str

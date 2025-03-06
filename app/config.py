@@ -18,7 +18,7 @@ SNAPKAT_API_KEY = os.getenv("SNAPKAT_API_KEY")
 class Settings:
     ENV: str = os.getenv("ENV", "development")  # Default to "development"
     FRONTEND_URL_LOCAL: str = os.getenv("FRONTEND_URL_LOCAL", "http://localhost:3000")
-    FRONTEND_URL_PROD: str = os.getenv("FRONTEND_URL_PROD", "https://yourfrontend.com")
+    FRONTEND_URL_PROD: str = os.getenv("FRONTEND_URL_PROD", "https://snepflow.com")
 
     @property
     def frontend_url(self) -> str:
@@ -31,9 +31,9 @@ class EmailSettings(BaseSettings):
     ALGORITHM: str = "HS256"
 
     # GMX SMTP Credentials
-    MAIL_USERNAME: str = "dpabotplatform@gmx.com"  # Your GMX email
-    MAIL_PASSWORD: str = "DpaBotPlatform732"  # Your GMX email password
-    MAIL_FROM: str = "dpabotplatform@gmx.com"  # Sender email
+    MAIL_USERNAME: str = "snepflow@gmx.com"  # Your GMX email
+    MAIL_PASSWORD: str = "WZ4*WbEn7687?bt"  # Your GMX email password
+    MAIL_FROM: str = "snepflow@gmx.com"  # Sender email
     MAIL_PORT: int = 587  # GMX uses port 587 for TLS
     MAIL_SERVER: str = "mail.gmx.com"
     MAIL_STARTTLS: bool = True  # Use STARTTLS for secure connection
