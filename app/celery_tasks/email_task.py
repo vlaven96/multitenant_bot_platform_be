@@ -12,13 +12,15 @@ class EmailTaskManager:
     def send_email_task(recipient: str, agency_name: str, registration_link: str):
         logger.info(f"[CELERY] Send email execution started with recipient {recipient}.")
         message = MessageSchema(
-            subject="Complete Your Admin Registration",
+            subject="Complete Your Registration",
             recipients=[recipient],
             body=(
-                f"Hello,\n\nYour agency '{agency_name}' has been registered successfully.\n"
-                f"Please complete your admin registration by clicking the link below:\n{registration_link}\n\n"
-                "If you did not request this, please ignore this email."
+                f"Hello,\n\n"
+                f"You have been invited to join the '{agency_name}' agency. "
+                f"To complete your registration, please click the link below:\n{registration_link}\n\n"
+                "If you did not request this invitation, please ignore this email."
             ),
+
             subtype="plain"
         )
         fm = FastMail(email_settings.mail_config)
