@@ -20,22 +20,8 @@ def get_all_agencies(db: Session = Depends(get_db), global_admin=Depends(get_glo
     return AgencyService.get_all_agencies(db)
 
 
-# @router.post("/", response_model=AgencyResponse)
-# def create_agency(agency_data: AgencyCreate,
-#                   background_tasks: BackgroundTasks,
-#                   db: Session = Depends(get_db)):
-#     """
-#     Creates a new agency with an auto-generated admin account.
-#     """
-#     try:
-#         # All invitation logic is encapsulated in the static method
-#         agency = AgencyService.create_agency_with_invitation(db, agency_data, background_tasks)
-#         return agency
-#     except ValueError as e:
-#         raise HTTPException(status_code=400, detail=str(e))
-
 @router.post("/", response_model=AgencyResponse)
-def create_agency(agency_data: AgencyCreateRequest,
+def create_agency(agency_data: AgencyCreate,
                   background_tasks: BackgroundTasks,
                   db: Session = Depends(get_db)):
     """
@@ -43,10 +29,24 @@ def create_agency(agency_data: AgencyCreateRequest,
     """
     try:
         # All invitation logic is encapsulated in the static method
-        agency = AgencyService.create_agency(db, agency_data)
+        agency = AgencyService.create_agency_with_invitation(db, agency_data, background_tasks)
         return agency
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+# @router.post("/", response_model=AgencyResponse)
+# def create_agency(agency_data: AgencyCreateRequest,
+#                   background_tasks: BackgroundTasks,
+#                   db: Session = Depends(get_db)):
+#     """
+#     Creates a new agency with an auto-generated admin account.
+#     """
+#     try:
+#         # All invitation logic is encapsulated in the static method
+#         agency = AgencyService.create_agency(db, agency_data)
+#         return agency
+#     except ValueError as e:
+#         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/invite_agency", response_model=dict)
 def invite_agency(

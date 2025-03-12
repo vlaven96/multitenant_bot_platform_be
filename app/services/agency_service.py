@@ -111,7 +111,10 @@ class AgencyService:
         # Check if an agency with the same name exists
         existing_agency = db.query(Agency).filter(Agency.name == agency_data.name).first()
         if existing_agency:
-            raise ValueError("Agency already exists")
+            raise ValueError("Agency already exists.")
+        existing_user = db.query(User).filter(User.email == agency_data.agency_email).first()
+        if existing_user:
+            raise ValueError("Email already in the system.")
         # Create the agency
         agency = Agency(name=agency_data.name)
         db.add(agency)
@@ -122,7 +125,7 @@ class AgencyService:
             agency_id=agency.id,
             status=SubscriptionStatus.AVAILABLE,
             renewed_at=datetime.utcnow(),
-            days_available=30,
+            days_available=7,
             number_of_sloths=10,
             price=0.00,
             turned_off_at=datetime.utcnow() + timedelta(days=7)

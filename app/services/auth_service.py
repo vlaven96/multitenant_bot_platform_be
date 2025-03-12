@@ -65,9 +65,13 @@ class AuthService:
             raise ValueError("Invalid token")
 
         # Check if user already exists
-        existing_user = db.query(User).filter(User.email == email).first()
-        if existing_user:
+        existing_user_with_username = db.query(User).filter(User.username == user_data.username).first()
+        if existing_user_with_username:
+            raise ValueError("Username already used")
+        existing_user_with_email = db.query(User).filter(User.email == email).first()
+        if existing_user_with_email:
             raise ValueError("User already registered")
+
 
         # Validate role
         if role_str not in ["ADMIN", "USER"]:
@@ -81,7 +85,7 @@ class AuthService:
             email=email,
             password=hash_password(user_data.password),
             role=role_enum,
-            agency_id=agency_id  # Assign user to the correct agencya
+            agency_id=agency_id  # Assign user to the correct agency
         )
         db.add(new_user)
         db.commit()
